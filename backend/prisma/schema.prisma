@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CLIENTE
+  AGENTE
+}
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  email     String   @unique
+  telefone  String?
+  senha     String
+  role      Role     @default(CLIENTE)
+  ativo     Boolean  @default(true)
+  lat       Float?
+  lng       Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pedidos   Pedido[]
+  pedidosComoAgente Pedido[] @relation("AgentePedidos")
+  reservas  Reserva[]
+}
+
+model Produto {
+  id         Int      @id @default(autoincrement())
+  nome       String
+  descricao  String?
+  preco      Float
+  categoria  String
+  imagemUrl  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  itensPedido ItemPedido[]
+}
+
+model Pedido {
+  id         Int      @id @default(autoincrement())
+  clienteId  Int
+  cliente    Usuario  @relation(fields: [clienteId], references: [id])
+  agenteId   Int?
+  agente     Usuario? @relation("AgentePedidos", fields: [agenteId], references: [id])
+  endereco   String
+  bairro     String
+  subtotal   Float
+  frete      Float
+  total      Float
+  status     String   @default("PENDENTE")
+  dataPedido DateTime @default(now())
+
+  itens      ItemPedido[]
+}
+
+model ItemPedido {
+  id            Int      @id @default(autoincrement())
+  pedidoId      Int
+  pedido        Pedido   @relation(fields: [pedidoId], references: [id])
+  produtoId     Int?
+  produtoNome   String
+  precoUnitario Float
+  quantidade    Int
+  subtotal      Float
+
+  produto       Produto? @relation(fields: [produtoId], references: [id])
+}
+
+model Mesa {
+  id           Int      @id
+  qrCode       String?  @unique
+  ocupada      Boolean  @default(false)
+  pedidoAtualId String?
+
+  reservas     Reserva[]
+}
+
+model Reserva {
+  id               Int      @id @default(autoincrement())
+  clienteId        Int
+  cliente          Usuario  @relation(fields: [clienteId], references: [id])
+  mesaId           Int
+  mesa             Mesa     @relation(fields: [mesaId], references: [id])
+  dataHora         DateTime
+  quantidadePessoas Int
+  status           String   @default("PENDENTE")
+  createdAt        DateTime @default(now())
+}
+
+model TaxaFrete {
+  id            Int      @id @default(autoincrement())
+  bairro        String   @unique
+  valor         Float
+  tempoEstimado String
+}
+
+model Configuracao {
+  chave String @id
+  valor String
+}
