@@ -1,9 +1,9 @@
-"use client";
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Navbar from "../components/navbar";
+import Footer from "../components/Footer";
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -24,7 +24,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Enquanto o AuthContext não terminar de carregar, mostra um loader
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -34,14 +33,11 @@ export default function Home() {
   }
 
   const handleProtectedClick = (path: string) => {
-    if (!isAuthenticated) {
-      navigate("/login");
-    } else {
-      navigate(path);
-    }
+    if (!isAuthenticated) navigate("/login");
+    else navigate(path);
   };
 
-  const scrollToManual = () => {
+  const handleManualClick = () => {
     navigate("/manual");
   };
 
@@ -91,22 +87,10 @@ export default function Home() {
         <section className="py-16 bg-fundo">
           <div className="container-custom">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              <div className="transform hover:scale-105 transition">
-                <div className="text-4xl font-bold text-primaria">2+</div>
-                <div className="text-gray-700">Anos de experiência</div>
-              </div>
-              <div className="transform hover:scale-105 transition">
-                <div className="text-4xl font-bold text-primaria">50+</div>
-                <div className="text-gray-700">Pratos no cardápio</div>
-              </div>
-              <div className="transform hover:scale-105 transition">
-                <div className="text-4xl font-bold text-primaria">900+</div>
-                <div className="text-gray-700">Clientes satisfeitos</div>
-              </div>
-              <div className="transform hover:scale-105 transition">
-                <div className="text-4xl font-bold text-primaria">10+</div>
-                <div className="text-gray-700">Bairros atendidos</div>
-              </div>
+              <div><div className="text-4xl font-bold text-primaria">2+</div><div>Anos de experiência</div></div>
+              <div><div className="text-4xl font-bold text-primaria">50+</div><div>Pratos no cardápio</div></div>
+              <div><div className="text-4xl font-bold text-primaria">900+</div><div>Clientes satisfeitos</div></div>
+              <div><div className="text-4xl font-bold text-primaria">10+</div><div>Bairros atendidos</div></div>
             </div>
           </div>
         </section>
@@ -185,7 +169,9 @@ export default function Home() {
               </div>
             </div>
             <div className="text-center mt-8">
-              <button onClick={scrollToManual} className="bg-primaria text-white px-6 py-2 rounded-full hover:bg-secundaria transition transform hover:scale-105 inline-flex items-center gap-2">📖 Manual do Utilizador</button>
+              <button onClick={handleManualClick} className="bg-primaria text-white px-6 py-2 rounded-full hover:bg-secundaria transition transform hover:scale-105 inline-flex items-center gap-2">
+                📖 Manual do Utilizador
+              </button>
             </div>
           </div>
         </section>
@@ -270,49 +256,7 @@ export default function Home() {
           </div>
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className="bg-secundaria text-white pt-12 pb-6">
-        <div className="container-custom">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4">Origens do Sabor</h3>
-              <p className="text-gray-300">Sabor, qualidade e tradição.</p>
-              <p className="text-gray-300 mt-2">Desde 2024 servindo o melhor da gastronomia moçambicana.</p>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Contactos</h4>
-              <p className="text-gray-300">📞 +258 84 842 4621</p>
-              <p className="text-gray-300">📞 +258 86 015 1122</p>
-              <p className="text-gray-300">✉️ geral@origensdosabor.co.mz</p>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Horário</h4>
-              <p className="text-gray-300">Segunda a Sábado: 07:30 - 22h</p>
-              <p className="text-gray-300">Domingo: 09h - 22h</p>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Siga-nos</h4>
-              <div className="flex flex-col gap-2">
-                <a href="https://www.instagram.com/origens_do_sabor_restaurante_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-gray-300 hover:text-white transition"><i className="fab fa-instagram text-xl"></i> Instagram</a>
-                <a href="https://web.facebook.com/p/Origens-do-sabor-61572114920143" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-gray-300 hover:text-white transition"><i className="fab fa-facebook text-xl"></i> Facebook</a>
-                <a href="https://wa.me/258848424621" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-gray-300 hover:text-white transition"><i className="fab fa-whatsapp text-xl"></i> WhatsApp</a>
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400 text-sm">&copy; 2026 Origens do Sabor - Todos os direitos reservados | Desenvolvido com ❤️ em Chimoio</div>
-        </div>
-      </footer>
-
-      <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
-        .animation-delay-200 { animation-delay: 0.2s; }
-        .animation-delay-400 { animation-delay: 0.4s; }
-      `}</style>
+      <Footer />
     </>
   );
 }

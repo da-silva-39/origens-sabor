@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable react-refresh/only-export-components */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import api from '../services/api';
 
@@ -8,6 +9,7 @@ interface User {
   nome: string;
   email: string;
   role: string;
+  telefone?: string;
 }
 
 interface AuthContextData {

@@ -1,4 +1,5 @@
 import Navbar from "../components/navbar";
+import Footer from "../components/Footer";
 import { Link } from "react-router-dom";
 
 export default function Manual() {
@@ -63,6 +64,7 @@ export default function Manual() {
           <Link to="/" className="btn-primary">Voltar à Página Inicial</Link>
         </div>
       </div>
+            <Footer />
     </>
   );
 }
