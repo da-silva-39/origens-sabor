@@ -12,11 +12,21 @@ export default function GoogleCallback() {
     if (token && userParam) {
       localStorage.setItem('token', token);
       localStorage.setItem('user', userParam);
-      navigate('/dashboard');
+      // Pequeno atraso para garantir que o localStorage foi escrito
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 100);
     } else {
       navigate('/login');
     }
   }, [navigate]);
 
-  return <div className="text-center py-20">A processar login...</div>;
+  return (
+    <div className="flex justify-center items-center h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primaria mx-auto"></div>
+        <p className="mt-4">A processar login com Google...</p>
+      </div>
+    </div>
+  );
 }

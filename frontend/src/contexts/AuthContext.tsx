@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import api from '../services/api';
 
@@ -19,7 +21,6 @@ interface AuthContextData {
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -30,31 +31,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const token = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
     if (token && storedUser) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setUser(JSON.parse(storedUser));
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      } catch (e) {
+        console.error('Erro ao carregar user do localStorage', e);
+      }
     }
     setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     const response = await api.post('/auth/login', { email, senha: password });
-    const { token, user } = response.data;
+    const { token, user: userData } = response.data;
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    setUser(user);
+    localStorage.setItem('user', JSON.stringify(userData));
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    setUser(userData);
   };
 
   const register = async (nome: string, email: string, telefone: string, senha: string) => {
     const response = await api.post('/auth/register', { nome, email, telefone, senha });
-    const { token, user } = response.data;
+    const { token, user: userData } = response.data;
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    setUser(user);
+    localStorage.setItem('user', JSON.stringify(userData));
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    setUser(userData);
   };
 
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    delete api.defaults.headers.common['Authorization'];
     setUser(null);
   };
 

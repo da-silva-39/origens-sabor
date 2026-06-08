@@ -23,12 +23,14 @@ model Usuario {
   ativo     Boolean  @default(true)
   lat       Float?
   lng       Float?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
 
   pedidos   Pedido[]
   pedidosComoAgente Pedido[] @relation("AgentePedidos")
   reservas  Reserva[]
+
+  @@map("usuarios")
 }
 
 model Produto {
@@ -37,72 +39,87 @@ model Produto {
   descricao  String?
   preco      Float
   categoria  String
-  imagemUrl  String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  imagemUrl  String?   @map("imagemUrl")
+  createdAt  DateTime @default(now()) @map("createdAt")
+  updatedAt  DateTime @updatedAt @map("updatedAt")
 
   itensPedido ItemPedido[]
+
+  @@map("produtos")
 }
 
 model Pedido {
   id         Int      @id @default(autoincrement())
-  clienteId  Int
-  cliente    Usuario  @relation(fields: [clienteId], references: [id])
-  agenteId   Int?
-  agente     Usuario? @relation("AgentePedidos", fields: [agenteId], references: [id])
+  clienteId  Int      @map("clienteId")
+  agenteId   Int?     @map("agenteId")
   endereco   String
   bairro     String
   subtotal   Float
   frete      Float
   total      Float
   status     String   @default("PENDENTE")
-  dataPedido DateTime @default(now())
+  dataPedido DateTime @default(now()) @map("dataPedido")
 
-  itens      ItemPedido[]
+  cliente   Usuario  @relation(fields: [clienteId], references: [id])
+  agente    Usuario? @relation("AgentePedidos", fields: [agenteId], references: [id])
+  itens     ItemPedido[]
+
+  @@map("pedidos")
 }
 
 model ItemPedido {
   id            Int      @id @default(autoincrement())
-  pedidoId      Int
-  pedido        Pedido   @relation(fields: [pedidoId], references: [id])
-  produtoId     Int?
-  produtoNome   String
-  precoUnitario Float
+  pedidoId      Int      @map("pedidoId")
+  produtoId     Int?     @map("produtoId")
+  produtoNome   String   @map("produtoNome")
+  precoUnitario Float    @map("precoUnitario")
   quantidade    Int
   subtotal      Float
 
-  produto       Produto? @relation(fields: [produtoId], references: [id])
+  pedido  Pedido   @relation(fields: [pedidoId], references: [id])
+  produto Produto? @relation(fields: [produtoId], references: [id])
+
+  @@map("itens_pedido")
 }
 
 model Mesa {
-  id           Int      @id
-  qrCode       String?  @unique
-  ocupada      Boolean  @default(false)
-  pedidoAtualId String?
+  id            Int     @id
+  qrCode        String? @unique @map("qrCode")
+  ocupada       Boolean @default(false)
+  pedidoAtualId String? @map("pedidoAtualId")
 
-  reservas     Reserva[]
+  reservas Reserva[]
+
+  @@map("mesas")
 }
 
 model Reserva {
   id               Int      @id @default(autoincrement())
-  clienteId        Int
-  cliente          Usuario  @relation(fields: [clienteId], references: [id])
-  mesaId           Int
-  mesa             Mesa     @relation(fields: [mesaId], references: [id])
-  dataHora         DateTime
-  quantidadePessoas Int
+  clienteId        Int      @map("clienteId")
+  mesaId           Int      @map("mesaId")
+  dataHora         DateTime @map("dataHora")
+  quantidadePessoas Int     @map("quantidadePessoas")
   status           String   @default("PENDENTE")
-  createdAt        DateTime @default(now())
+  createdAt        DateTime @default(now()) @map("createdAt")
+
+  cliente Usuario @relation(fields: [clienteId], references: [id])
+  mesa    Mesa    @relation(fields: [mesaId], references: [id])
+
+  @@map("reservas")
 }
 
 model TaxaFrete {
-  id            Int      @id @default(autoincrement())
-  bairro        String   @unique
+  id            Int     @id @default(autoincrement())
+  bairro        String  @unique
   valor         Float
-  tempoEstimado String
+  tempoEstimado String  @map("tempoEstimado")
+
+  @@map("taxas_frete")
 }
 
 model Configuracao {
   chave String @id
   valor String
+
+  @@map("configuracoes")
 }
