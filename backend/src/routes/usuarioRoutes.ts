@@ -8,6 +8,7 @@ const router = Router();
 
 router.use(authMiddleware); // todas as rotas exigem autenticação
 router.get('/', adminMiddleware, listarUsuarios);
+
 router.post('/', adminMiddleware, criarUsuario);
 router.patch('/:id/toggle', adminMiddleware, toggleUsuarioAtivo);
 router.put('/perfil', atualizarPerfil);

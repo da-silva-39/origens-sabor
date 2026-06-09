@@ -16,6 +16,7 @@ import AdminProdutos from './pages/AdminProdutos';
 import AdminPedidos from './pages/AdminPedidos';
 import Cardapio from './pages/Cardapio';
 import Carrinho from './pages/Carrinho';
+import Finalizar from './pages/Finalizar';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
             <Route path="/admin/pedidos" element={<AdminPedidos />} />
             <Route path="/cardapio" element={<Cardapio />} />
             <Route path="/carrinho" element={<Carrinho />} />
+            <Route path="/finalizar" element={<Finalizar />} />
           </Routes>
         </main>
         <Footer />

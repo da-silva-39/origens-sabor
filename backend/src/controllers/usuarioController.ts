@@ -63,3 +63,16 @@ export const uploadFoto = async (req: Request, res: Response) => {
   await prisma.usuario.update({ where: { id: userId }, data: { fotoUrl } });
   res.json({ fotoUrl });
 };
+
+export const listarUsuariosPorRole = async (req: Request, res: Response) => {
+  const { role } = req.query;
+  try {
+    const usuarios = await prisma.usuario.findMany({
+      where: { role: role as any, ativo: true },
+      select: { id: true, nome: true, email: true, telefone: true, role: true },
+    });
+    res.json(usuarios);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao listar usuários' });
+  }
+};

@@ -1,14 +1,18 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
 
+interface Agente {
+  id: number;
+  nome: string;
+}
+
 interface Pedido {
   id: number;
   cliente: { nome: string };
-  agente: { nome: string } | null;
+  agente: { id: number; nome: string } | null;
   endereco: string;
   total: number;
   status: string;
@@ -17,22 +21,35 @@ interface Pedido {
 
 export default function AdminPedidos() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [agentes, setAgentes] = useState<Agente[]>([]);
   const [loading, setLoading] = useState(true);
+  const [atribuindo, setAtribuindo] = useState<number | null>(null);
 
   const carregarPedidos = async () => {
     try {
       const res = await api.get('/pedidos/todos');
       setPedidos(res.data);
     } catch (error) {
-      console.error(error);
       toast.error('Erro ao carregar pedidos');
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const carregarAgentes = async () => {
+    try {
+      const res = await api.get('/pedidos/agentes');
+      setAgentes(res.data);
+    } catch (error) {
+      console.error('Erro ao carregar agentes', error);
     }
   };
 
   useEffect(() => {
-    carregarPedidos();
+    const fetchData = async () => {
+      setLoading(true);
+      await Promise.all([carregarPedidos(), carregarAgentes()]);
+      setLoading(false);
+    };
+    fetchData();
   }, []);
 
   const atualizarStatus = async (id: number, status: string) => {
@@ -46,12 +63,15 @@ export default function AdminPedidos() {
   };
 
   const atribuirAgente = async (id: number, agenteId: number) => {
+    setAtribuindo(id);
     try {
       await api.put(`/pedidos/${id}/agente`, { agenteId });
-      toast.success('Agente atribuído!');
+      toast.success(`Agente atribuído! Notificação enviada.`);
       carregarPedidos();
     } catch (error) {
       toast.error('Erro ao atribuir agente');
+    } finally {
+      setAtribuindo(null);
     }
   };
 
@@ -63,7 +83,7 @@ export default function AdminPedidos() {
       <div className="overflow-x-auto bg-white rounded-2xl shadow">
         <table className="min-w-full">
           <thead className="bg-secundaria text-white">
-            <tr><th className="p-3">ID</th><th>Cliente</th><th>Agente</th><th>Endereço</th><th>Total</th><th>Status</th><th>Ações</th></tr>
+            <tr><th className="p-3">ID</th><th>Cliente</th><th>Agente</th><th>Endereço</th><th>Total</th><th>Status</th><th>Atribuir Agente</th></tr>
           </thead>
           <tbody>
             {pedidos.map(p => (
@@ -74,7 +94,11 @@ export default function AdminPedidos() {
                 <td className="p-3">{p.endereco}</td>
                 <td className="p-3">{p.total.toFixed(2)} MT</td>
                 <td className="p-3">
-                  <select value={p.status} onChange={e => atualizarStatus(p.id, e.target.value)} className="border rounded-full px-2 py-1">
+                  <select
+                    value={p.status}
+                    onChange={e => atualizarStatus(p.id, e.target.value)}
+                    className="border rounded-full px-2 py-1"
+                  >
                     <option value="PENDENTE">Pendente</option>
                     <option value="PREPARANDO">Preparando</option>
                     <option value="SAIU_ENTREGA">Saiu entrega</option>
@@ -83,7 +107,19 @@ export default function AdminPedidos() {
                   </select>
                 </td>
                 <td className="p-3">
-                  <button onClick={() => atribuirAgente(p.id, 1)} className="bg-primaria text-white px-2 py-1 rounded">Atribuir Agente</button>
+                  <select
+                    onChange={e => atribuirAgente(p.id, Number(e.target.value))}
+                    value={p.agente?.id || ''}
+                    disabled={atribuindo === p.id}
+                    className="border rounded-full px-2 py-1"
+                  >
+                    <option value="">Selecione</option>
+                    {agentes.map(a => (
+                      <option key={a.id} value={a.id}>
+                        {a.nome}
+                      </option>
+                    ))}
+                  </select>
                 </td>
               </tr>
             ))}

@@ -9,6 +9,9 @@ import './config/passport';
 import authRoutes from './routes/authRoutes';
 import usuarioRoutes from './routes/usuarioRoutes';
 import pedidoRoutes from './routes/pedidoRoutes';
+import produtoRoutes from './routes/produtoRoutes';
+import freteRoutes from './routes/freteRoutes';
+
 
 dotenv.config();
 const app = express();
@@ -19,11 +22,16 @@ app.use(express.json());
 app.use(session({ secret: process.env.JWT_SECRET!, resave: false, saveUninitialized: false, cookie: { secure: false } }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Servir ficheiros estáticos da pasta uploads (imagens de produtos e perfis)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/pedidos', pedidoRoutes);
+app.use('/api/produtos', produtoRoutes);
+app.use('/api/frete', freteRoutes);
+
 
 app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 app.get('/api/auth/google/callback', passport.authenticate('google', { session: false, failureRedirect: 'http://localhost:5173/login' }), (req, res) => {

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { FiCamera, FiSave, FiLock, FiUser, FiMail, FiPhone, FiMapPin, FiCalendar } from 'react-icons/fi';
+import { toast } from 'react-hot-toast';
 
 export default function Perfil() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -29,7 +30,8 @@ export default function Perfil() {
       setTelefone(user.telefone || '');
       setEndereco((user as any).endereco || '');
       setDataNascimento((user as any).dataNascimento || '');
-      if ((user as any).fotoUrl) setFotoPreview((user as any).fotoUrl);
+      const foto = (user as any).fotoUrl;
+      if (foto) setFotoPreview(foto);
     }
   }, [user]);
 
@@ -53,7 +55,6 @@ export default function Perfil() {
       setMensagem('Perfil atualizado com sucesso!');
       const updatedUser = { ...user, nome, email, telefone, endereco, dataNascimento };
       localStorage.setItem('user', JSON.stringify(updatedUser));
-      // Opcional: recarregar a página para refletir (ou atualizar contexto)
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) {
       setErro(err.response?.data?.error || 'Erro ao atualizar perfil');
@@ -97,6 +98,7 @@ export default function Perfil() {
       const updatedUser = { ...user, fotoUrl: response.data.fotoUrl };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       setFotoPreview(response.data.fotoUrl);
+      toast.success('Foto de perfil atualizada!');
     } catch (err: any) {
       setErro(err.response?.data?.error || 'Erro ao enviar foto');
     } finally {
@@ -119,7 +121,7 @@ export default function Perfil() {
       {erro && <div className="bg-red-100 text-red-700 p-3 rounded-xl mb-4">{erro}</div>}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Coluna da foto de perfil */}
+        {/* Foto de perfil */}
         <div className="bg-white p-6 rounded-2xl shadow-md text-center">
           <h2 className="text-xl font-semibold mb-4 flex items-center justify-center gap-2"><FiCamera /> Foto</h2>
           <div className="flex justify-center mb-4">
