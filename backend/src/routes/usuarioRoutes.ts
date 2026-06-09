@@ -5,11 +5,13 @@ import { adminMiddleware } from '../middlewares/adminMiddleware';
 import upload from '../middlewares/upload';
 
 const router = Router();
-router.use(authMiddleware);
+
+router.use(authMiddleware); // todas as rotas exigem autenticação
 router.get('/', adminMiddleware, listarUsuarios);
 router.post('/', adminMiddleware, criarUsuario);
 router.patch('/:id/toggle', adminMiddleware, toggleUsuarioAtivo);
 router.put('/perfil', atualizarPerfil);
 router.put('/alterar-senha', alterarSenha);
 router.post('/upload-foto', upload.single('foto'), uploadFoto);
+
 export default router;

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/navbar';   // ← minúsculo
 import Footer from './components/Footer';
@@ -11,6 +12,10 @@ import AdminDashboard from './pages/AdminDashboard';
 import AgenteDashboard from './pages/AgenteDashboard';
 import AdminUsuarios from './pages/AdminUsuarios';
 import Perfil from './pages/Perfil';
+import AdminProdutos from './pages/AdminProdutos';
+import AdminPedidos from './pages/AdminPedidos';
+import Cardapio from './pages/Cardapio';
+import Carrinho from './pages/Carrinho';
 
 function App() {
   return (
@@ -28,9 +33,14 @@ function App() {
             <Route path="/agente/dashboard" element={<AgenteDashboard />} />
             <Route path="/admin/usuarios" element={<AdminUsuarios />} />
             <Route path="/perfil" element={<Perfil />} />
+            <Route path="/admin/produtos" element={<AdminProdutos />} />
+            <Route path="/admin/pedidos" element={<AdminPedidos />} />
+            <Route path="/cardapio" element={<Cardapio />} />
+            <Route path="/carrinho" element={<Carrinho />} />
           </Routes>
         </main>
         <Footer />
+        <Toaster position="bottom-right" toastOptions={{ duration: 3000 }} />
       </BrowserRouter>
     </AuthProvider>
   );

@@ -3,11 +3,17 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
+// backend/src/controllers/usuarioController.ts (apenas a parte relevante)
 export const listarUsuarios = async (req: Request, res: Response) => {
-  const usuarios = await prisma.usuario.findMany({
-    select: { id: true, nome: true, email: true, telefone: true, role: true, ativo: true, endereco: true, fotoUrl: true, isOAuth: true }
-  });
-  res.json(usuarios);
+  try {
+    const usuarios = await prisma.usuario.findMany({
+      select: { id: true, nome: true, email: true, telefone: true, role: true, ativo: true, endereco: true, fotoUrl: true, isOAuth: true },
+    });
+    res.json(usuarios);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao listar utilizadores' });
+  }
 };
 
 export const criarUsuario = async (req: Request, res: Response) => {
