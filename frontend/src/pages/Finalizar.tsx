@@ -1,3 +1,5 @@
+/* eslint-disable prefer-const */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
@@ -6,12 +8,34 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCartStore } from '../hooks/useCartStore';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
-import { FiTruck, FiClock, FiUser, FiPhone, FiMapPin, FiShoppingCart } from 'react-icons/fi';
+import { FiTruck, FiClock, FiUser, FiPhone, FiMail, FiMapPin, FiShoppingCart } from 'react-icons/fi';
 
 interface Bairro {
   bairro: string;
   valor: number;
   tempoEstimado: string;
+}
+
+// ==================== FUNÇÕES DE VALIDAÇÃO ====================
+function validarEmail(email: string): boolean {
+  const re = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
+  return re.test(email);
+}
+
+function validarTelefoneMocambique(telefone: string): boolean {
+  const limpo = telefone.replace(/\s/g, '');
+  const regexCompleto = /^\+258[8][2-7]\d{7}$/;
+  const regexLocal = /^[8][2-7]\d{7}$/;
+  if (regexCompleto.test(limpo)) return true;
+  if (regexLocal.test(limpo)) return true;
+  return false;
+}
+
+function formatarTelefone(telefone: string): string {
+  let limpo = telefone.replace(/\s/g, '');
+  if (limpo.startsWith('+258')) return limpo;
+  if (limpo.match(/^[8][2-7]\d{7}$/)) return '+258' + limpo;
+  return telefone;
 }
 
 export default function Finalizar() {
@@ -24,8 +48,13 @@ export default function Finalizar() {
   const [tempoEntrega, setTempoEntrega] = useState('');
   const [form, setForm] = useState({
     nome: '',
+    email: '',
     telefone: '',
     endereco: '',
+  });
+  const [errors, setErrors] = useState({
+    email: '',
+    telefone: '',
   });
   const [enviando, setEnviando] = useState(false);
   const [carregandoBairros, setCarregandoBairros] = useState(true);
@@ -43,9 +72,8 @@ export default function Finalizar() {
       try {
         setCarregandoBairros(true);
         const res = await api.get('/frete/bairros');
-        console.log('Bairros carregados:', res.data);
         setBairros(res.data);
-      } catch (error: any) {
+      } catch (error) {
         console.error('Erro ao carregar bairros', error);
         toast.error('Não foi possível carregar os bairros para entrega');
       } finally {
@@ -55,10 +83,10 @@ export default function Finalizar() {
     fetchBairros();
   }, []);
 
-  // Preencher nome do utilizador
+  // Preencher nome e email do utilizador logado
   useEffect(() => {
     if (user) {
-      setForm(prev => ({ ...prev, nome: user.nome || '' }));
+      setForm(prev => ({ ...prev, nome: user.nome || '', email: user.email || '' }));
     }
   }, [user]);
 
@@ -82,17 +110,47 @@ export default function Finalizar() {
   const subtotal = getTotalPrice();
   const total = subtotal + frete;
 
+  // CORREÇÃO PRINCIPAL: handleChange agora trata o bairro separadamente
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+
     if (name === 'bairro') {
       setBairroSelecionado(value);
     } else {
       setForm({ ...form, [name]: value });
+      // Limpar erro do campo ao editar
+      if (name === 'email') setErrors(prev => ({ ...prev, email: '' }));
+      if (name === 'telefone') setErrors(prev => ({ ...prev, telefone: '' }));
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name === 'email') {
+      if (!validarEmail(value)) {
+        setErrors(prev => ({ ...prev, email: 'Digite um e‑mail válido (ex: nome@dominio.com)' }));
+      }
+    }
+    if (name === 'telefone') {
+      if (!validarTelefoneMocambique(value)) {
+        setErrors(prev => ({ ...prev, telefone: 'Número inválido. Use +258 82XXXXXXX ou 82XXXXXXX (82,83,84,85,86,87)' }));
+      }
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validarEmail(form.email)) {
+      setErrors(prev => ({ ...prev, email: 'E‑mail inválido' }));
+      toast.error('E‑mail inválido');
+      return;
+    }
+    if (!validarTelefoneMocambique(form.telefone)) {
+      setErrors(prev => ({ ...prev, telefone: 'Número de telefone inválido' }));
+      toast.error('Número de telefone inválido');
+      return;
+    }
+
     if (items.length === 0) {
       toast.error('O carrinho está vazio');
       navigate('/carrinho');
@@ -102,14 +160,17 @@ export default function Finalizar() {
       toast.error('Selecione um bairro para entrega');
       return;
     }
-    if (!form.nome || !form.telefone || !form.endereco) {
+    if (!form.nome || !form.email || !form.telefone || !form.endereco) {
       toast.error('Preencha todos os campos');
       return;
     }
 
+    const telefoneFormatado = formatarTelefone(form.telefone);
+
     const pedido = {
       clienteNome: form.nome,
-      telefone: form.telefone,
+      clienteEmail: form.email,
+      telefone: telefoneFormatado,
       endereco: form.endereco,
       bairro: bairroSelecionado,
       subtotal,
@@ -178,17 +239,37 @@ export default function Finalizar() {
                     required
                   />
                 </div>
-                <div className="flex items-center gap-2 border rounded-full px-4 py-2">
-                  <FiPhone className="text-gray-400" />
-                  <input
-                    type="tel"
-                    name="telefone"
-                    value={form.telefone}
-                    onChange={handleChange}
-                    placeholder="Telefone (WhatsApp)"
-                    className="w-full outline-none"
-                    required
-                  />
+                <div>
+                  <div className="flex items-center gap-2 border rounded-full px-4 py-2">
+                    <FiMail className="text-gray-400" />
+                    <input
+                      type="email"
+                      name="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder="E-mail (para receber a confirmação)"
+                      className="w-full outline-none"
+                      required
+                    />
+                  </div>
+                  {errors.email && <p className="text-red-500 text-xs mt-1 ml-4">{errors.email}</p>}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 border rounded-full px-4 py-2">
+                    <FiPhone className="text-gray-400" />
+                    <input
+                      type="tel"
+                      name="telefone"
+                      value={form.telefone}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder="Telefone (ex: 82XXXXXXX ou +258 82XXXXXXX)"
+                      className="w-full outline-none"
+                      required
+                    />
+                  </div>
+                  {errors.telefone && <p className="text-red-500 text-xs mt-1 ml-4">{errors.telefone}</p>}
                 </div>
                 <div className="flex items-center gap-2 border rounded-full px-4 py-2">
                   <FiMapPin className="text-gray-400" />
