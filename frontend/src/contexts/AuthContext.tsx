@@ -10,6 +10,10 @@ interface User {
   email: string;
   role: string;
   telefone?: string;
+  endereco?: string;
+  dataNascimento?: string;
+  fotoUrl?: string;
+  isOAuth?: boolean;
 }
 
 interface AuthContextData {
@@ -38,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(parsedUser);
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       } catch (e) {
-        console.error('Erro ao carregar user do localStorage', e);
+        console.error(e);
       }
     }
     setLoading(false);

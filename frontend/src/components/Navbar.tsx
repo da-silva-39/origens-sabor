@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar() {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
 
   return (
     <nav className="bg-primaria text-white sticky top-0 z-50 shadow-md">
@@ -15,6 +15,7 @@ export default function Navbar() {
           </Link>
         </div>
         <div className="flex items-center gap-4 flex-wrap">
+          <Link to="/" className="hover:opacity-90 transition">Home</Link>
           <Link to="/cardapio" className="hover:opacity-90 transition">Cardápio</Link>
           <Link to="/carrinho" className="hover:opacity-90 transition">Carrinho</Link>
           {isAuthenticated && (
@@ -25,7 +26,6 @@ export default function Navbar() {
               {user?.role === 'ADMIN' && (
                 <Link to="/admin" className="hover:opacity-90 transition">Admin</Link>
               )}
-              <span className="text-sm">Olá, {user?.nome}</span>
               <button onClick={logout} className="bg-white text-primaria px-4 py-2 rounded-full hover:bg-secundaria hover:text-white transition">
                 Sair
               </button>
