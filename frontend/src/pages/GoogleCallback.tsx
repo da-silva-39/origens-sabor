@@ -12,9 +12,16 @@ export default function GoogleCallback() {
     if (token && userParam) {
       localStorage.setItem('token', token);
       localStorage.setItem('user', userParam);
+      const user = JSON.parse(userParam);
       // Pequeno atraso para garantir que o localStorage foi escrito
       setTimeout(() => {
-        navigate('/dashboard');
+        if (user.role === 'ADMIN') {
+          navigate('/admin/dashboard');
+        } else if (user.role === 'AGENTE') {
+          navigate('/agente/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
       }, 100);
     } else {
       navigate('/login');

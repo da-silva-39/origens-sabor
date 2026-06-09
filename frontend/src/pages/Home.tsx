@@ -2,8 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import Navbar from "../components/navbar";
-import Footer from "../components/Footer";
+
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -43,7 +42,6 @@ export default function Home() {
 
   return (
     <>
-      <Navbar />
       <main>
         {/* Hero Carrossel */}
         <div className="relative h-[600px] md:h-[700px] overflow-hidden">
@@ -256,7 +254,6 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <Footer />
     </>
   );
 }
