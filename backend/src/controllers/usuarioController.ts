@@ -76,3 +76,45 @@ export const listarUsuariosPorRole = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Erro ao listar usuários' });
   }
 };
+
+// ==================== LOCALIZAÇÃO DE AGENTES ====================
+export const guardarLocalizacaoAgente = async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const { latitude, longitude, endereco } = req.body;
+
+  if (!latitude || !longitude) {
+    return res.status(400).json({ error: 'Coordenadas obrigatórias' });
+  }
+
+  try {
+    const localizacao = await prisma.localizacaoAgente.create({
+      data: {
+        agenteId: userId,
+        latitude,
+        longitude,
+        endereco: endereco || null,
+      },
+    });
+    res.status(201).json({ message: 'Localização guardada', id: localizacao.id });
+  } catch (error) {
+    console.error('Erro ao guardar localização:', error);
+    res.status(500).json({ error: 'Erro interno ao guardar localização' });
+  }
+};
+
+export const obterUltimaLocalizacaoAgente = async (req: Request, res: Response) => {
+  const { id } = req.params; // id do agente
+  try {
+    const localizacao = await prisma.localizacaoAgente.findFirst({
+      where: { agenteId: Number(id) },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!localizacao) {
+      return res.status(404).json({ error: 'Nenhuma localização encontrada para este agente' });
+    }
+    res.json(localizacao);
+  } catch (error) {
+    console.error('Erro ao buscar localização:', error);
+    res.status(500).json({ error: 'Erro interno ao buscar localização' });
+  }
+};

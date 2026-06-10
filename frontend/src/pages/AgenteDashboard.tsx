@@ -15,9 +15,8 @@ import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// --- Ícone personalizado para o marcador (corrige um problema comum de ícones) ---
-// @ts-ignore
-delete L.Icon.Default.prototype._getIconUrl;
+// Ícones do Leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
   iconUrl: markerIcon,
@@ -34,18 +33,11 @@ interface Pedido {
   bairro: string;
 }
 
-// --- Função de reverse geocoding (igual à que já usa) ---
 async function obterEnderecoPorCoordenadas(lat: number, lng: number): Promise<string> {
   try {
     const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
-      params: {
-        lat,
-        lon: lng,
-        format: 'json',
-        'accept-language': 'pt',
-        addressdetails: 1,
-      },
-      headers: { 'User-Agent': 'OrigensSabor/1.0 (seu-email@dominio.com)' },
+      params: { lat, lon: lng, format: 'json', 'accept-language': 'pt', addressdetails: 1 },
+      headers: { 'User-Agent': 'OrigensSabor/1.0 (admin@origenssabor.com)' },
     });
     const data = response.data;
     if (data && data.display_name) {
@@ -64,7 +56,6 @@ async function obterEnderecoPorCoordenadas(lat: number, lng: number): Promise<st
   }
 }
 
-// --- Componente auxiliar para centralizar o mapa ---
 function ChangeView({ center }: { center: [number, number] }) {
   const map = useMap();
   map.setView(center, map.getZoom());
@@ -76,7 +67,6 @@ export default function AgenteDashboard() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [carregandoPedidos, setCarregandoPedidos] = useState(true);
 
-  // Estado da localização
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [geoLoading, setGeoLoading] = useState(true);
@@ -84,14 +74,13 @@ export default function AgenteDashboard() {
   const [carregandoEndereco, setCarregandoEndereco] = useState(false);
   const lastCoordsRef = useRef<{ lat: number; lng: number; endereco: string } | null>(null);
 
-  // --- 1. Obter localização do dispositivo ---
+  // Geolocalização
   useEffect(() => {
     if (!navigator.geolocation) {
       setGeoError('Geolocalização não é suportada pelo seu navegador.');
       setGeoLoading(false);
       return;
     }
-
     const success = (pos: GeolocationPosition) => {
       setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       setGeoError(null);
@@ -105,17 +94,14 @@ export default function AgenteDashboard() {
       setGeoError(msg);
       setGeoLoading(false);
     };
-
     navigator.geolocation.getCurrentPosition(success, errorCb, { enableHighAccuracy: true, timeout: 10000 });
     const watchId = navigator.geolocation.watchPosition(success, errorCb, { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 });
-
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  // --- 2. Atualizar o endereço textual quando a localização muda muito ---
+  // Reverse geocoding
   useEffect(() => {
     if (!location) return;
-
     if (lastCoordsRef.current) {
       const { lat, lng } = lastCoordsRef.current;
       const distancia = Math.sqrt(Math.pow(location.lat - lat, 2) + Math.pow(location.lng - lng, 2)) * 111000;
@@ -124,7 +110,6 @@ export default function AgenteDashboard() {
         return;
       }
     }
-
     const fetchEndereco = async () => {
       setCarregandoEndereco(true);
       const endereco = await obterEnderecoPorCoordenadas(location.lat, location.lng);
@@ -133,12 +118,11 @@ export default function AgenteDashboard() {
       setCarregandoEndereco(false);
     };
     fetchEndereco();
-
     const interval = setInterval(() => { if (location) fetchEndereco(); }, 15000);
     return () => clearInterval(interval);
   }, [location]);
 
-  // --- 3. Buscar pedidos do agente (igual ao original) ---
+  // Buscar pedidos do agente
   useEffect(() => {
     if (isAuthenticated && user?.role === 'AGENTE') {
       const fetchPedidos = async () => {
@@ -154,6 +138,27 @@ export default function AgenteDashboard() {
       return () => clearInterval(interval);
     } else setCarregandoPedidos(false);
   }, [isAuthenticated, user]);
+
+  // ENVIAR LOCALIZAÇÃO PARA O SERVIDOR (MONITORAMENTO ADMIN)
+  useEffect(() => {
+    if (!location || !user || user.role !== 'AGENTE') return;
+
+    const enviarLocalizacao = async () => {
+      try {
+        await api.post('/usuarios/agente/localizacao', {
+          latitude: location.lat,
+          longitude: location.lng,
+          endereco: enderecoAtual || null,
+        });
+      } catch (err) {
+        console.error('Erro ao enviar localização:', err);
+      }
+    };
+
+    enviarLocalizacao();
+    const interval = setInterval(enviarLocalizacao, 15000);
+    return () => clearInterval(interval);
+  }, [location, enderecoAtual, user]);
 
   const marcarEntregue = async (id: number) => {
     try {
@@ -172,7 +177,6 @@ export default function AgenteDashboard() {
         <h1 className="text-3xl font-bold text-secundaria mb-2">Painel do Entregador</h1>
         <p className="text-gray-600 mb-6">Bem-vindo, {user?.nome}!</p>
 
-        {/* Card de Localização Dinâmica */}
         <div className="bg-white rounded-2xl shadow-md p-5 mb-6 border-l-8 border-primaria">
           <div className="flex items-center gap-3 mb-2">
             <FiNavigation className="text-primaria text-2xl" />
@@ -186,24 +190,21 @@ export default function AgenteDashboard() {
                 {carregandoEndereco ? 'A identificar local...' : enderecoAtual}
               </p>
               <p className="text-xs text-gray-400">Atualização dinâmica a cada 15s ou ao se movimentar.</p>
+              <p className="text-xs text-green-600 mt-1">
+                📡 Localização partilhada com o administrador em tempo real
+              </p>
             </>
           )}
         </div>
 
-        {/* Mapa com Leaflet e OpenStreetMap */}
         <div className="bg-white rounded-2xl shadow-md p-2 mb-8">
           <h2 className="text-xl font-semibold text-gray-800 px-3 pt-3">🗺️ Mapa da minha localização</h2>
           <div style={{ height: '400px', width: '100%', borderRadius: '12px', overflow: 'hidden' }}>
             {location ? (
               <MapContainer center={[location.lat, location.lng]} zoom={15} style={{ height: '100%', width: '100%' }}>
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+                <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <Marker position={[location.lat, location.lng]}>
-                  <Popup>
-                    Você está aqui! <br /> {enderecoAtual}
-                  </Popup>
+                  <Popup>Você está aqui! <br /> {enderecoAtual}</Popup>
                 </Marker>
                 <ChangeView center={[location.lat, location.lng]} />
               </MapContainer>
@@ -216,7 +217,6 @@ export default function AgenteDashboard() {
           <p className="text-xs text-gray-400 text-center pt-2">Localização atualizada automaticamente.</p>
         </div>
 
-        {/* Lista de pedidos (inalterada) */}
         {pedidos.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-md p-12 text-center">
             <FiPackage className="text-6xl text-gray-300 mx-auto mb-4" />

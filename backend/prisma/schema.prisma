@@ -23,30 +23,34 @@ model Usuario {
   ativo          Boolean   @default(true)
   lat            Float?
   lng            Float?
-  isOAuth        Boolean   @default(false)   // true se criado via Google
+  isOAuth        Boolean   @default(false)
   endereco       String?
   dataNascimento DateTime?
   fotoUrl        String?
   createdAt      DateTime  @default(now()) @map("createdAt")
   updatedAt      DateTime  @updatedAt @map("updatedAt")
 
-  pedidos        Pedido[]
-  pedidosComoAgente Pedido[] @relation("AgentePedidos")
-  reservas       Reserva[]
+  // Relacionamentos
+  pedidos           Pedido[] // pedidos feitos pelo cliente
+  pedidosComoAgente Pedido[]            @relation("AgentePedidos") // pedidos atribuídos ao agente
+  reservas          Reserva[]
+  localizacoes      LocalizacaoAgente[] // histórico de localizações do agente
 
   @@map("usuarios")
 }
 
 model Produto {
-  id         Int      @id @default(autoincrement())
-  nome       String
-  descricao  String?
-  preco      Float
-  categoria  String
-  imagemUrl  String?   @map("imagemUrl")
-  createdAt  DateTime @default(now()) @map("createdAt")
-  updatedAt  DateTime @updatedAt @map("updatedAt")
+  id        Int      @id @default(autoincrement())
+  nome      String
+  descricao String?
+  preco     Float
+  categoria String
+  imagemUrl String?  @map("imagemUrl")
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
+
   itensPedido ItemPedido[]
+
   @@map("produtos")
 }
 
@@ -61,57 +65,81 @@ model Pedido {
   total      Float
   status     String   @default("PENDENTE")
   dataPedido DateTime @default(now()) @map("dataPedido")
-  cliente    Usuario  @relation(fields: [clienteId], references: [id])
-  agente     Usuario? @relation("AgentePedidos", fields: [agenteId], references: [id])
-  itens      ItemPedido[]
+
+  cliente Usuario  @relation(fields: [clienteId], references: [id])
+  agente  Usuario? @relation("AgentePedidos", fields: [agenteId], references: [id])
+
+  itens ItemPedido[]
+
   @@map("pedidos")
 }
 
 model ItemPedido {
-  id            Int      @id @default(autoincrement())
-  pedidoId      Int      @map("pedidoId")
-  produtoId     Int?     @map("produtoId")
-  produtoNome   String   @map("produtoNome")
-  precoUnitario Float    @map("precoUnitario")
+  id            Int    @id @default(autoincrement())
+  pedidoId      Int    @map("pedidoId")
+  produtoId     Int?   @map("produtoId")
+  produtoNome   String @map("produtoNome")
+  precoUnitario Float  @map("precoUnitario")
   quantidade    Int
   subtotal      Float
-  pedido        Pedido   @relation(fields: [pedidoId], references: [id])
-  produto       Produto? @relation(fields: [produtoId], references: [id])
+
+  pedido  Pedido   @relation(fields: [pedidoId], references: [id])
+  produto Produto? @relation(fields: [produtoId], references: [id])
+
   @@map("itens_pedido")
 }
 
 model Mesa {
-  id           Int      @id
-  qrCode       String?  @unique @map("qrCode")
-  ocupada      Boolean  @default(false)
+  id            Int     @id
+  qrCode        String? @unique @map("qrCode")
+  ocupada       Boolean @default(false)
   pedidoAtualId String? @map("pedidoAtualId")
-  reservas     Reserva[]
+
+  reservas Reserva[]
+
   @@map("mesas")
 }
 
 model Reserva {
-  id               Int      @id @default(autoincrement())
-  clienteId        Int      @map("clienteId")
-  mesaId           Int      @map("mesaId")
-  dataHora         DateTime @map("dataHora")
-  quantidadePessoas Int     @map("quantidadePessoas")
-  status           String   @default("PENDENTE")
-  createdAt        DateTime @default(now()) @map("createdAt")
-  cliente          Usuario  @relation(fields: [clienteId], references: [id])
-  mesa             Mesa     @relation(fields: [mesaId], references: [id])
+  id                Int      @id @default(autoincrement())
+  clienteId         Int      @map("clienteId")
+  mesaId            Int      @map("mesaId")
+  dataHora          DateTime @map("dataHora")
+  quantidadePessoas Int      @map("quantidadePessoas")
+  status            String   @default("PENDENTE")
+  createdAt         DateTime @default(now()) @map("createdAt")
+
+  cliente Usuario @relation(fields: [clienteId], references: [id])
+  mesa    Mesa    @relation(fields: [mesaId], references: [id])
+
   @@map("reservas")
 }
 
 model TaxaFrete {
-  id            Int     @id @default(autoincrement())
-  bairro        String  @unique
+  id            Int    @id @default(autoincrement())
+  bairro        String @unique
   valor         Float
-  tempoEstimado String  @map("tempoEstimado")
+  tempoEstimado String @map("tempoEstimado")
+
   @@map("taxas_frete")
 }
 
 model Configuracao {
   chave String @id
   valor String
+
   @@map("configuracoes")
+}
+
+model LocalizacaoAgente {
+  id        Int      @id @default(autoincrement())
+  agenteId  Int
+  latitude  Float
+  longitude Float
+  endereco  String?
+  createdAt DateTime @default(now())
+
+  agente Usuario @relation(fields: [agenteId], references: [id])
+
+  @@map("localizacoes_agente")
 }
