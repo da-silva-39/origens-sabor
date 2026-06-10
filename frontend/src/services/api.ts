@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
 
-// Define a URL base da API
-// Se a variável VITE_API_URL estiver definida (produção), usa ela
-// Caso contrário, usa '/api' (desenvolvimento com proxy do Vite)
+// Forçar o tipo para evitar erro do TypeScript
 const env = (import.meta as any).env;
-const baseURL = env.VITE_API_URL
-  ? `${env.VITE_API_URL}/api`
-  : '/api';
+const API_URL = env.VITE_API_URL;
+const baseURL = API_URL ? `${API_URL}/api` : '/api';
+
+console.log('[API] baseURL:', baseURL); // Para debug
 
 const api = axios.create({ baseURL });
 
