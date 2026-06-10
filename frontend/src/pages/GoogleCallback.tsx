@@ -11,10 +11,12 @@ export default function GoogleCallback() {
 
     if (token && userParam) {
       localStorage.setItem('token', token);
-      localStorage.setItem('user', userParam);
-      const user = JSON.parse(userParam);
-      // Pequeno atraso para garantir que o localStorage foi escrito
-      setTimeout(() => {
+      // O userParam foi codificado com encodeURIComponent, precisa de decode
+      const decodedUser = decodeURIComponent(userParam);
+      localStorage.setItem('user', decodedUser);
+      try {
+        const user = JSON.parse(decodedUser);
+        // Redireciona baseado na role
         if (user.role === 'ADMIN') {
           navigate('/admin/dashboard');
         } else if (user.role === 'AGENTE') {
@@ -22,7 +24,10 @@ export default function GoogleCallback() {
         } else {
           navigate('/dashboard');
         }
-      }, 100);
+      } catch (e) {
+        console.error('Erro ao parsear user:', e);
+        navigate('/login');
+      }
     } else {
       navigate('/login');
     }
