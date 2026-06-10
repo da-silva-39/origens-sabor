@@ -12,18 +12,38 @@ import pedidoRoutes from './routes/pedidoRoutes';
 import produtoRoutes from './routes/produtoRoutes';
 import freteRoutes from './routes/freteRoutes';
 
-
 dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+// Configuração CORS aprimorada
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://origens-sabor.vercel.app',
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permite requisições sem origin (ex: Postman) ou se a origin está na lista
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
-app.use(session({ secret: process.env.JWT_SECRET!, resave: false, saveUninitialized: false, cookie: { secure: false } }));
+app.use(session({
+  secret: process.env.JWT_SECRET!,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false },
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Servir ficheiros estáticos da pasta uploads (imagens de produtos e perfis)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use('/api/auth', authRoutes);
@@ -31,7 +51,6 @@ app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/pedidos', pedidoRoutes);
 app.use('/api/produtos', produtoRoutes);
 app.use('/api/frete', freteRoutes);
-
 
 app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 app.get('/api/auth/google/callback', passport.authenticate('google', { session: false, failureRedirect: 'http://localhost:5173/login' }), (req, res) => {
