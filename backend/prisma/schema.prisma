@@ -51,6 +51,7 @@ model Produto {
 
   itensPedido ItemPedido[]
 
+
   @@map("produtos")
 }
 
