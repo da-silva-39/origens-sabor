@@ -16,23 +16,22 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// URL do frontend (para redirecionamento OAuth e CORS)
+// 🔥 Permitir que o Express confie no proxy (Render, Heroku, etc.)
+app.set('trust proxy', 1);
+
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// Configuração CORS aprimorada
 const allowedOrigins = [
   'http://localhost:5173',
   FRONTEND_URL,
-  'https://origens-sabor.vercel.app', // fallback explicito
+  'https://origens-sabor.vercel.app',
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permite requisições sem origin (ex: Postman) ou se a origin está na lista
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.warn(`CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -44,7 +43,7 @@ app.use(session({
   secret: process.env.JWT_SECRET!,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false }, // Altere para true se usar HTTPS apenas (produção)
+  cookie: { secure: true, sameSite: 'lax' }, // 🔥 secure = true força cookies HTTPS
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -57,8 +56,9 @@ app.use('/api/pedidos', pedidoRoutes);
 app.use('/api/produtos', produtoRoutes);
 app.use('/api/frete', freteRoutes);
 
-// Google OAuth routes
-app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+app.get('/api/auth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
 
 app.get('/api/auth/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND_URL}/login` }),
