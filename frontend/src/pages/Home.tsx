@@ -223,11 +223,11 @@ export default function Home() {
                   <h3 className="text-xl font-semibold mb-2">📞 Telefone / WhatsApp</h3>
                   <p className="text-gray-700">+258 84 842 4621</p>
                   <p className="text-gray-700">+258 86 015 1122</p>
-                  <a href="https://wa.me/258848424621" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 bg-[#25D366] text-white px-4 py-2 rounded-full hover:bg-[#128C7E] transition">💬 Falar no WhatsApp</a>
+                  <a href="https://wa.me/258860151122" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 bg-[#25D366] text-white px-4 py-2 rounded-full hover:bg-[#128C7E] transition">💬 Falar no WhatsApp</a>
                 </div>
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold mb-2">✉️ E-mail</h3>
-                  <p className="text-gray-700">geral@origensdosabor.co.mz</p>
+                  <p className="text-gray-700">origensdosabor@gmail.com</p>
                 </div>
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold mb-2">📍 Endereço</h3>
@@ -243,7 +243,7 @@ export default function Home() {
                   <div className="flex flex-wrap gap-4">
                     <a href="https://www.instagram.com/origens_do_sabor_restaurante_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCAF45] hover:opacity-90 transition"><i className="fab fa-instagram"></i> Instagram</a>
                     <a href="https://web.facebook.com/p/Origens-do-sabor-61572114920143" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#1877F2] hover:bg-[#0E5A9E] transition"><i className="fab fa-facebook"></i> Facebook</a>
-                    <a href="https://wa.me/258848424621" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#25D366] hover:bg-[#128C7E] transition"><i className="fab fa-whatsapp"></i> WhatsApp</a>
+                    <a href="https://wa.me/258860151122" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#25D366] hover:bg-[#128C7E] transition"><i className="fab fa-whatsapp"></i> WhatsApp</a>
                   </div>
                 </div>
               </div>

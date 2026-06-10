@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,9 +21,11 @@ export default function Login() {
       else navigate('/dashboard');
     } catch (err) { setError('Credenciais inválidas'); }
   };
-
-  const handleGoogleLogin = () => { window.location.href = 'http://localhost:5000/api/auth/google'; };
-
+const env = (import.meta as any).env;
+const API_URL = env.VITE_API_URL || 'http://localhost:5000';
+const handleGoogleLogin = () => {
+  window.location.href = `${API_URL}/api/auth/google`;
+};
   return (
     <div className="min-h-screen flex items-center justify-center bg-fundo py-12 px-4">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
