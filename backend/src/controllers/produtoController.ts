@@ -1,8 +1,9 @@
 // backend/src/controllers/produtoController.ts
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import path from 'path';
-import fs from 'fs';
+// Não precisamos mais de fs e path para o armazenamento local
+// import path from 'path';
+// import fs from 'fs';
 
 const prisma = new PrismaClient();
 
@@ -23,7 +24,8 @@ export const criarProduto = async (req: Request, res: Response) => {
     const { nome, descricao, preco, categoria } = req.body;
     let imagemUrl = null;
     if (req.file) {
-      imagemUrl = `/uploads/produtos/${req.file.filename}`;
+      // O Cloudinary devolve o URL completo em req.file.path
+      imagemUrl = req.file.path;
     }
     const produto = await prisma.produto.create({
       data: {
@@ -49,13 +51,10 @@ export const atualizarProduto = async (req: Request, res: Response) => {
     let imagemUrl: string | undefined = undefined;
 
     if (req.file) {
-      imagemUrl = `/uploads/produtos/${req.file.filename}`;
-      // Remover imagem antiga se existir
-      const produtoAntigo = await prisma.produto.findUnique({ where: { id: Number(id) } });
-      if (produtoAntigo?.imagemUrl) {
-        const oldPath = path.join(__dirname, '../../', produtoAntigo.imagemUrl);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      }
+      // URL do Cloudinary
+      imagemUrl = req.file.path;
+      // Se quiser apagar a imagem antiga do Cloudinary, pode implementar depois.
+      // Por agora, apenas substituímos o URL no banco.
     }
 
     const produto = await prisma.produto.update({
@@ -79,11 +78,8 @@ export const atualizarProduto = async (req: Request, res: Response) => {
 export const deletarProduto = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const produto = await prisma.produto.findUnique({ where: { id: Number(id) } });
-    if (produto?.imagemUrl) {
-      const imagePath = path.join(__dirname, '../../', produto.imagemUrl);
-      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
-    }
+    // Opcional: antes de deletar, pode remover a imagem do Cloudinary se desejar.
+    // Por simplicidade, não estamos a remover (as imagens ficarão no Cloudinary).
     await prisma.produto.delete({ where: { id: Number(id) } });
     res.status(204).send();
   } catch (error) {
