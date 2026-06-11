@@ -98,6 +98,7 @@ export default function Cardapio() {
     );
   };
 
+  // Aplica todos os filtros (nome, categoria, preço)
   const produtosFiltrados = produtos.filter((p) => {
     if (filtroNome && !p.nome.toLowerCase().includes(filtroNome.toLowerCase())) return false;
     if (filtroCategoria && p.categoria !== filtroCategoria) return false;
@@ -105,6 +106,18 @@ export default function Cardapio() {
     if (filtroMax && p.preco > parseFloat(filtroMax)) return false;
     return true;
   });
+
+  // Agrupa os produtos filtrados por categoria
+  const produtosPorCategoria = produtosFiltrados.reduce((acc, produto) => {
+    if (!acc[produto.categoria]) {
+      acc[produto.categoria] = [];
+    }
+    acc[produto.categoria].push(produto);
+    return acc;
+  }, {} as Record<string, Produto[]>);
+
+  // Ordena as categorias (alfabeticamente)
+  const categoriasOrdenadas = Object.keys(produtosPorCategoria).sort((a, b) => a.localeCompare(b));
 
   const limparFiltros = () => {
     setFiltroNome('');
@@ -196,48 +209,57 @@ export default function Cardapio() {
           </div>
         </div>
 
-        {/* Grid de produtos */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {produtosFiltrados.map((produto) => (
-            <div
-              key={produto.id}
-              className="group bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
-            >
-              <div className="relative h-56 overflow-hidden bg-gray-100">
-                {produto.imagemUrl ? (
-                  <img
-                    src={produto.imagemUrl}
-                    alt={produto.nome}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">🍽️</div>
-                )}
-              </div>
-              <div className="p-5">
-                <h3 className="text-xl font-bold text-secundaria mb-1">{produto.nome}</h3>
-                <p className="text-gray-600 text-sm mb-2 line-clamp-2">{produto.descricao || 'Sem descrição'}</p>
-                <p className="text-xs text-primaria font-semibold mb-3">{produto.categoria}</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-2xl font-bold text-primaria">{produto.preco.toFixed(2)} MT</span>
-                  <button
-                    onClick={() => handleAddToCart(produto)}
-                    className="bg-primaria hover:bg-secundaria text-white px-4 py-2 rounded-full transition flex items-center gap-1"
-                  >
-                    <FiShoppingCart size={16} /> Adicionar
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {produtosFiltrados.length === 0 && (
+        {/* Exibição por categorias */}
+        {produtosFiltrados.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-gray-500">Nenhum produto encontrado. Tente outros filtros.</p>
             <button onClick={limparFiltros} className="mt-4 text-primaria hover:underline">
               Limpar filtros
             </button>
+          </div>
+        ) : (
+          <div>
+            {categoriasOrdenadas.map((categoria) => (
+              <div key={categoria} className="mb-12">
+                <h2 className="text-2xl md:text-3xl font-bold text-secundaria border-b-4 border-primaria inline-block pb-2 mb-6">
+                  {categoria}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {produtosPorCategoria[categoria].map((produto) => (
+                    <div
+                      key={produto.id}
+                      className="group bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
+                    >
+                      <div className="relative h-56 overflow-hidden bg-gray-100">
+                        {produto.imagemUrl ? (
+                          <img
+                            src={produto.imagemUrl}
+                            alt={produto.nome}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">🍽️</div>
+                        )}
+                      </div>
+                      <div className="p-5">
+                        <h3 className="text-xl font-bold text-secundaria mb-1">{produto.nome}</h3>
+                        <p className="text-gray-600 text-sm mb-2 line-clamp-2">{produto.descricao || 'Sem descrição'}</p>
+                        <p className="text-xs text-primaria font-semibold mb-3">{produto.categoria}</p>
+                        <div className="flex justify-between items-center">
+                          <span className="text-2xl font-bold text-primaria">{produto.preco.toFixed(2)} MT</span>
+                          <button
+                            onClick={() => handleAddToCart(produto)}
+                            className="bg-primaria hover:bg-secundaria text-white px-4 py-2 rounded-full transition flex items-center gap-1"
+                          >
+                            <FiShoppingCart size={16} /> Adicionar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
