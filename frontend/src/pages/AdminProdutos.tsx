@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
+import { FiEdit, FiTrash2 } from 'react-icons/fi';
 
 interface Produto {
   id: number;
@@ -165,18 +166,20 @@ export default function AdminProdutos() {
                 <td className="p-3">{p.preco.toFixed(2)} MT</td>
                 <td className="p-3">{p.categoria}</td>
                 <td className="p-3 space-x-2">
-                  <button
-                    onClick={() => abrirModal(p)}
-                    className="text-blue-600 hover:text-blue-800 transition"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDelete(p.id)}
-                    className="text-red-600 hover:text-red-800 transition"
-                  >
-                    Excluir
-                  </button>
+                 <button
+  onClick={() => abrirModal(p)}
+  className="flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium px-3 py-1.5 rounded-lg transition-colors duration-200"
+>
+  <FiEdit size={16} />
+  Editar
+</button>
+<button
+  onClick={() => handleDelete(p.id)}
+  className="flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-700 font-medium px-3 py-1.5 rounded-lg transition-colors duration-200"
+>
+  <FiTrash2 size={16} />
+  Excluir
+</button>
                 </td>
               </tr>
             ))}
