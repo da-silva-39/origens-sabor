@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { FiCheckCircle, FiMapPin, FiTrash2 } from 'react-icons/fi';
 
 interface Usuario {
   id: number;
@@ -91,13 +92,34 @@ export default function AdminUsuarios() {
                 <td>{u.role}</td>
                 <td>{u.ativo ? 'Sim' : 'Não'}</td>
                 <td className="space-x-2">
-                  <button onClick={() => toggleAtivo(u.id)} className="text-primaria hover:underline">
-                    {u.ativo ? 'Desativar' : 'Ativar'}
-                  </button>
-                  {u.role === 'AGENTE' && (
-                    <Link to={`/admin/monitorar-agente/${u.id}`} className="text-blue-600 hover:underline ml-2">
-                      Monitorar
-                    </Link>
+                   <button
+    onClick={() => toggleAtivo(u.id)}
+    className={`
+      flex items-center gap-1 px-3 py-1.5 rounded-lg font-medium transition-colors duration-200
+      ${u.ativo
+        ? 'bg-red-50 text-red-700 hover:bg-red-100'
+        : 'bg-green-50 text-green-700 hover:bg-green-100'
+      }
+    `}
+  >
+    {u.ativo ? (
+      <>
+        <FiTrash2 size={16} /> Desativar
+      </>
+    ) : (
+      <>
+        <FiCheckCircle size={16} /> Ativar
+      </>
+    )}
+  </button>
+
+  {u.role === 'AGENTE' && (
+    <Link
+      to={`/admin/monitorar-agente/${u.id}`}
+      className="flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium px-3 py-1.5 rounded-lg transition-colors duration-200"
+    >
+      <FiMapPin size={16} /> Monitorar
+    </Link>
                   )}
                 </td>
               </tr>
