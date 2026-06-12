@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const { isAuthenticated, loading } = useAuth();
@@ -145,11 +144,11 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Como usar o sistema */}
+        {/* Como usar o sistema (incluindo reservas) */}
         <section id="como-usar" className="py-16 bg-white">
           <div className="container-custom">
             <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">Como usar o sistema</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div className="text-center p-6 rounded-2xl hover:shadow-lg transition group">
                 <div className="text-5xl mb-4 bg-primaria/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:bg-primaria/20 transition">1</div>
                 <h3 className="text-xl font-semibold mb-2">Crie sua conta</h3>
@@ -164,6 +163,11 @@ export default function Home() {
                 <div className="text-5xl mb-4 bg-primaria/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:bg-primaria/20 transition">3</div>
                 <h3 className="text-xl font-semibold mb-2">Finalize e receba</h3>
                 <p className="text-gray-600">Escolha o bairro, calcule o frete e aguarde a entrega.</p>
+              </div>
+              <div className="text-center p-6 rounded-2xl hover:shadow-lg transition group">
+                <div className="text-5xl mb-4 bg-primaria/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:bg-primaria/20 transition">4</div>
+                <h3 className="text-xl font-semibold mb-2">Reserve sua mesa</h3>
+                <p className="text-gray-600">Escolha data, hora e número de pessoas. Receba um recibo em PDF.</p>
               </div>
             </div>
             <div className="text-center mt-8">

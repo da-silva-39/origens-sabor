@@ -16,9 +16,10 @@ export default function Manual() {
               <li><strong>Fazer login:</strong> Use o seu e‑mail e senha ou entre com Google.</li>
               <li><strong>Explorar cardápio:</strong> Navegue pelos produtos, filtre por categoria, preço ou nome.</li>
               <li><strong>Adicionar ao carrinho:</strong> Clique em "Adicionar" no produto desejado.</li>
-              <li><strong>Finalizar pedido:</strong> No carrinho, confirme os itens, escolha o bairro, calcule o frete e finalize.</li>
+              <li><strong>Finalizar pedido:</strong> No carrinho, confirme os itens, escolha o bairro, calcule o frete e finalize. Será gerado um PDF com os detalhes do pedido – pode descarregá‑lo e guardá‑lo.</li>
               <li><strong>Acompanhar pedidos:</strong> Na área "Meus Pedidos", veja o status (Pendente, Preparando, Saiu entrega, Entregue).</li>
-              <li><strong>Reservar mesa:</strong> Aceda a "Reservas", escolha data, hora e número de pessoas.</li>
+              <li><strong>Reservar mesa:</strong> Aceda a <strong>"Reservar Mesa"</strong> no menu. Escolha a mesa, data, hora e número de pessoas. A reserva ficará pendente até o administrador confirmar. Após confirmada, poderá <strong>descarregar um recibo em PDF</strong> com todos os detalhes.</li>
+              <li><strong>Gerir reservas:</strong> Em <strong>"Minhas Reservas"</strong> pode cancelar (se ainda não realizada) e visualizar os recibos.</li>
             </ul>
           </section>
           <section>
@@ -29,7 +30,8 @@ export default function Manual() {
               <li><strong>Gestão de produtos:</strong> Adicione, edite ou remova produtos (incluindo upload de imagem).</li>
               <li><strong>Gestão de pedidos:</strong> Altere o status dos pedidos e atribua entregadores (agentes).</li>
               <li><strong>Gestão de utilizadores:</strong> Crie, active/desactive clientes ou agentes.</li>
-              <li><strong>Gestão de mesas:</strong> Gere QR Codes, altere ocupação.</li>
+              <li><strong>Gestão de reservas:</strong> Aceda a <strong>"Gerir Reservas"</strong> (ou <code>/admin/reservas</code>). Veja todas as solicitações, confirme ou cancele. Pode também gerar recibos em PDF para qualquer reserva confirmada.</li>
+              <li><strong>Gestão de mesas:</strong> Gere QR Codes, altere ocupação (futuro).</li>
               <li><strong>Configurações:</strong> Ajuste horários, taxas de frete, etc.</li>
             </ul>
           </section>
@@ -55,16 +57,20 @@ export default function Manual() {
               </div>
               <div>
                 <strong className="text-secundaria">Como funciona o QR Code das mesas?</strong>
-                <p className="text-gray-600">Cada mesa tem um QR Code. Ao escanear, a mesa é marcada como ocupada e pode fazer pedidos directamente do lugar.</p>
+                <p className="text-gray-600">Cada mesa tem um QR Code. Ao escanear, a mesa é marcada como ocupada e pode fazer pedidos directamente do lugar. (Funcionalidade em desenvolvimento)</p>
+              </div>
+              <div>
+                <strong className="text-secundaria">Onde vejo os recibos dos meus pedidos/reservas?</strong>
+                <p className="text-gray-600">Após finalizar um pedido, o PDF é descarregado automaticamente. Para reservas, depois de confirmada pela administração, aparecerá um botão "Baixar Recibo" na sua lista de reservas (<code>/minhas-reservas</code>).</p>
               </div>
             </div>
           </section>
         </div>
         <div className="text-center mt-8">
-          <Link to="/" className="btn-primary">Voltar à Página Inicial</Link>
+          <Link to="/" className="bg-primaria text-white px-6 py-2 rounded-full hover:bg-secundaria transition inline-block">Voltar à Página Inicial</Link>
         </div>
       </div>
-            <Footer />
+      <Footer />
     </>
   );
 }
