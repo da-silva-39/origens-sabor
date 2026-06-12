@@ -11,6 +11,11 @@ import usuarioRoutes from './routes/usuarioRoutes';
 import pedidoRoutes from './routes/pedidoRoutes';
 import produtoRoutes from './routes/produtoRoutes';
 import freteRoutes from './routes/freteRoutes';
+import reservaRoutes from './routes/reservaRoutes';
+import mesaRoutes from './routes/mesaRoutes';
+// ...
+
+
 
 dotenv.config();
 const app = express();
@@ -55,8 +60,12 @@ app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/pedidos', pedidoRoutes);
 app.use('/api/produtos', produtoRoutes);
 app.use('/api/frete', freteRoutes);
+app.use('/api/reservas', reservaRoutes);
+app.use('/api/mesas', mesaRoutes);
+
 
 app.get('/api/auth/google',
+  
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 

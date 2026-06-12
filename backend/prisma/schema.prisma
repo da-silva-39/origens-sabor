@@ -107,8 +107,11 @@ model Reserva {
   mesaId            Int      @map("mesaId")
   dataHora          DateTime @map("dataHora")
   quantidadePessoas Int      @map("quantidadePessoas")
-  status            String   @default("PENDENTE")
+  status            String   @default("PENDENTE") // PENDENTE, CONFIRMADA, CANCELADA, CONCLUIDA
+  codigoRecibo      String   @unique
+  observacoes       String?
   createdAt         DateTime @default(now()) @map("createdAt")
+  updatedAt         DateTime @updatedAt @map("updatedAt")
 
   cliente Usuario @relation(fields: [clienteId], references: [id])
   mesa    Mesa    @relation(fields: [mesaId], references: [id])

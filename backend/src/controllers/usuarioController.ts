@@ -187,3 +187,12 @@ export const obterUltimaLocalizacaoAgente = async (req: Request, res: Response) 
     res.status(500).json({ error: 'Erro interno ao buscar localização' });
   }
 };
+
+export const listarMesas = async (req: Request, res: Response) => {
+  try {
+    const mesas = await prisma.mesa.findMany();
+    res.json(mesas);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao listar mesas' });
+  }
+};

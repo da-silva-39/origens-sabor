@@ -18,6 +18,13 @@ import Cardapio from './pages/Cardapio';
 import Carrinho from './pages/Carrinho';
 import Finalizar from './pages/Finalizar';
 import AdminMonitorarAgente from './pages/AdminMonitorarAgente';
+import ReservarMesa from './pages/ReservarMesa';
+import MinhasReservas from './pages/MinhasReservas';
+import AdminReservas from './pages/AdminReservas';
+
+// dentro do <Routes>
+
+
 
 
 function App() {
@@ -42,6 +49,9 @@ function App() {
             <Route path="/carrinho" element={<Carrinho />} />
             <Route path="/finalizar" element={<Finalizar />} />
             <Route path="/admin/monitorar-agente/:id" element={<AdminMonitorarAgente />} />
+            <Route path="/reservar-mesa" element={<ReservarMesa />} />
+            <Route path="/minhas-reservas" element={<MinhasReservas />} />
+            <Route path="/admin/reservas" element={<AdminReservas />} />
           </Routes>
         </main>
         <Footer />

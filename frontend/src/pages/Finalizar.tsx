@@ -9,6 +9,8 @@ import { useCartStore } from '../hooks/useCartStore';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
 import { FiTruck, FiClock, FiUser, FiPhone, FiMail, FiMapPin, FiShoppingCart } from 'react-icons/fi';
+import { pdf } from '@react-pdf/renderer';
+import { ReciboPedidoPDF } from '../components/ReciboPedidoPDF';
 
 interface Bairro {
   bairro: string;
@@ -110,7 +112,6 @@ export default function Finalizar() {
   const subtotal = getTotalPrice();
   const total = subtotal + frete;
 
-  // CORREÇÃO PRINCIPAL: handleChange agora trata o bairro separadamente
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
@@ -118,7 +119,6 @@ export default function Finalizar() {
       setBairroSelecionado(value);
     } else {
       setForm({ ...form, [name]: value });
-      // Limpar erro do campo ao editar
       if (name === 'email') setErrors(prev => ({ ...prev, email: '' }));
       if (name === 'telefone') setErrors(prev => ({ ...prev, telefone: '' }));
     }
@@ -167,7 +167,7 @@ export default function Finalizar() {
 
     const telefoneFormatado = formatarTelefone(form.telefone);
 
-    const pedido = {
+    const pedidoData = {
       clienteNome: form.nome,
       clienteEmail: form.email,
       telefone: telefoneFormatado,
@@ -187,7 +187,31 @@ export default function Finalizar() {
 
     setEnviando(true);
     try {
-      await api.post('/pedidos', pedido);
+      const response = await api.post('/pedidos', pedidoData);
+      const pedido = response.data;
+
+      // Gerar PDF do pedido
+      const blob = await pdf(
+        <ReciboPedidoPDF
+          pedido={{
+            id: pedido.id,
+            dataPedido: pedido.dataPedido,
+            total: pedido.total,
+            itens: pedido.itens || pedidoData.itens,
+            endereco: form.endereco,
+            bairro: bairroSelecionado,
+          }}
+          cliente={{ nome: form.nome, email: form.email }}
+        />
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pedido_${pedido.id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+
       toast.success('Pedido realizado com sucesso!');
       clearCart();
       navigate('/dashboard');
