@@ -96,6 +96,47 @@ export default function Home() {
           </div>
         )}
 
+        {/* Chamada atrativa para utilizadores NÃO autenticados */}
+        {!isAuthenticated && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 py-12 border-b border-amber-200">
+            <div className="container-custom text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-secundaria mb-4">🍽️ Faça parte da nossa família!</h2>
+              <p className="text-gray-700 text-lg max-w-2xl mx-auto mb-8">
+                Crie uma conta gratuita e tenha acesso a um mundo de vantagens: faça pedidos online, 
+                reserve a sua mesa com apenas alguns cliques, guarde os seus pratos favoritos e muito mais.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <button
+                  onClick={() => navigate("/registro")}
+                  className="bg-primaria text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-secundaria transition transform hover:scale-105 shadow-md"
+                >
+                  📝 Criar Conta Grátis
+                </button>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="bg-white border-2 border-primaria text-primaria px-8 py-3 rounded-full text-lg font-semibold hover:bg-primaria/10 transition"
+                >
+                  🔐 Já tenho conta
+                </button>
+              </div>
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-left max-w-3xl mx-auto">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">✅</span>
+                  <p className="text-gray-600 text-sm">Pedidos online rápidos e seguros</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">✅</span>
+                  <p className="text-gray-600 text-sm">Reserva de mesas com confirmação por e‑mail</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">✅</span>
+                  <p className="text-gray-600 text-sm">Acompanhamento dos seus pedidos</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Estatísticas */}
         <section className="py-16 bg-fundo">
           <div className="container-custom">
@@ -108,7 +149,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Como usar o sistema (movido para antes de "Porquê escolher-nos") */}
+        {/* Como usar o sistema */}
         <section id="como-usar" className="py-16 bg-white">
           <div className="container-custom">
             <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">Como usar o sistema</h2>
@@ -142,7 +183,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Características (Porquê escolher-nos?) */}
+        {/* Porquê escolher-nos? */}
         <section className="py-16 bg-fundo">
           <div className="container-custom">
             <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">Porquê escolher-nos?</h2>
@@ -261,9 +302,9 @@ export default function Home() {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">📱 Siga-nos</h3>
                   <div className="flex flex-wrap gap-4">
-                    <a href="https://www.instagram.com/origens_do_sabor_restaurante_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCAF45] hover:opacity-90 transition"><i className="fab fa-instagram"></i> Instagram</a>
-                    <a href="https://web.facebook.com/p/Origens-do-sabor-61572114920143" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#1877F2] hover:bg-[#0E5A9E] transition"><i className="fab fa-facebook"></i> Facebook</a>
-                    <a href="https://wa.me/258860151122" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#25D366] hover:bg-[#128C7E] transition"><i className="fab fa-whatsapp"></i> WhatsApp</a>
+                    <a href="https://www.instagram.com/origens_do_sabor_restaurante_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCAF45] hover:opacity-90 transition">📷 Instagram</a>
+                    <a href="https://web.facebook.com/p/Origens-do-sabor-61572114920143" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#1877F2] hover:bg-[#0E5A9E] transition">📘 Facebook</a>
+                    <a href="https://wa.me/258860151122" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#25D366] hover:bg-[#128C7E] transition">💬 WhatsApp</a>
                   </div>
                 </div>
               </div>
