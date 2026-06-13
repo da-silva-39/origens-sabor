@@ -27,13 +27,13 @@ export default function Navbar() {
         {/* Links para desktop */}
         <div className="hidden md:flex items-center gap-3">
           <Link to="/" className={linkDesktop}>Início</Link>
+          <Link to="/contacto" className={linkDesktop}>Contactar</Link>
 
           {isAuthenticated ? (
             <>
               <Link to="/cardapio" className={linkDesktop}>Cardápio</Link>
               <Link to="/carrinho" className={linkDesktop}>Carrinho</Link>
               
-              {/* Links de reservas para todos os utilizadores autenticados */}
               <Link to="/reservar-mesa" className={linkDesktop}>Reservar Mesa</Link>
               <Link to="/minhas-reservas" className={linkDesktop}>Minhas Reservas</Link>
 
@@ -75,12 +75,11 @@ export default function Navbar() {
       {menuAberto && (
         <div className="md:hidden bg-primaria py-4 px-6 flex flex-col gap-3 border-t border-white/20">
           <Link to="/" onClick={fecharMenu} className={linkMobile}>Início</Link>
+          <Link to="/contacto" onClick={fecharMenu} className={linkMobile}>Contactar</Link>
           {isAuthenticated ? (
             <>
               <Link to="/cardapio" onClick={fecharMenu} className={linkMobile}>Cardápio</Link>
               <Link to="/carrinho" onClick={fecharMenu} className={linkMobile}>Carrinho</Link>
-              
-              {/* Links de reservas no mobile */}
               <Link to="/reservar-mesa" onClick={fecharMenu} className={linkMobile}>Reservar Mesa</Link>
               <Link to="/minhas-reservas" onClick={fecharMenu} className={linkMobile}>Minhas Reservas</Link>
 

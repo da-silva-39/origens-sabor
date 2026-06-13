@@ -21,10 +21,8 @@ import AdminMonitorarAgente from './pages/AdminMonitorarAgente';
 import ReservarMesa from './pages/ReservarMesa';
 import MinhasReservas from './pages/MinhasReservas';
 import AdminReservas from './pages/AdminReservas';
-
-
-// dentro do <Routes>
-
+import Contacto from './pages/Contacto';
+import Manual from './pages/Manual';
 
 
 
@@ -53,6 +51,8 @@ function App() {
             <Route path="/reservar-mesa" element={<ReservarMesa />} />
             <Route path="/minhas-reservas" element={<MinhasReservas />} />
             <Route path="/admin/reservas" element={<AdminReservas />} />
+            <Route path="/contacto" element={<Contacto />} />
+            <Route path="/manual" element={<Manual />} />
           </Routes>
         </main>
         <Footer />
