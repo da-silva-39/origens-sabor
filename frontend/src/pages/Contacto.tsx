@@ -253,7 +253,7 @@ Enviado através do formulário de contacto.`;
                   <FiShoppingBag /> Ver Cardápio
                 </Link>
                 <Link
-                  to="/reservar-mesa"
+                  to="/login"
                   className="flex items-center gap-2 text-sm bg-primaria/10 text-primaria px-3 py-2 rounded-xl hover:bg-primaria/20 transition"
                 >
                   <FiCalendar /> Reservar Mesa
