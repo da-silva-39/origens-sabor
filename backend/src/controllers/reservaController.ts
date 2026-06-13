@@ -181,3 +181,48 @@ export const obterReserva = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Erro ao obter reserva' });
   }
 };
+
+// Validar reserva via QR code (público)
+export const validarReservaQR = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { codigo } = req.query;
+
+  if (!id || !codigo) {
+    return res.status(400).json({ error: 'Dados incompletos' });
+  }
+
+  try {
+    const reserva = await prisma.reserva.findFirst({
+      where: { id: Number(id), codigoRecibo: String(codigo) },
+      include: { mesa: true, cliente: { select: { nome: true } } }
+    });
+
+    if (!reserva) {
+      return res.status(200).json({ valida: false, motivo: 'Reserva não encontrada ou código inválido.' });
+    }
+
+    if (reserva.status !== 'CONFIRMADA') {
+      return res.status(200).json({ valida: false, motivo: 'Reserva ainda não foi confirmada. Aguarde aprovação do restaurante.' });
+    }
+
+    const agora = new Date();
+    const dataReserva = new Date(reserva.dataHora);
+    if (dataReserva < agora) {
+      return res.status(200).json({ valida: false, motivo: 'Esta reserva já expirou. A data/hora já passou.' });
+    }
+
+    return res.status(200).json({
+      valida: true,
+      reserva: {
+        id: reserva.id,
+        mesa: reserva.mesa.numero,
+        dataHora: reserva.dataHora,
+        cliente: reserva.cliente.nome,
+        quantidadePessoas: reserva.quantidadePessoas
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao validar reserva' });
+  }
+};

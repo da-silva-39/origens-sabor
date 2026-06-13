@@ -23,6 +23,8 @@ import MinhasReservas from './pages/MinhasReservas';
 import AdminReservas from './pages/AdminReservas';
 import Contacto from './pages/Contacto';
 import Manual from './pages/Manual';
+import ValidarReserva from './pages/ValidarReserva';
+
 
 
 
@@ -53,6 +55,7 @@ function App() {
             <Route path="/admin/reservas" element={<AdminReservas />} />
             <Route path="/contacto" element={<Contacto />} />
             <Route path="/manual" element={<Manual />} />
+            <Route path="/reservas/validar/:id" element={<ValidarReserva />} />
           </Routes>
         </main>
         <Footer />

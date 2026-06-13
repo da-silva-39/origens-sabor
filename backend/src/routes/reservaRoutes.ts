@@ -10,9 +10,15 @@ import {
 } from '../controllers/reservaController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { adminMiddleware } from '../middlewares/adminMiddleware';
+// ... importações existentes
+import { validarReservaQR } from '../controllers/reservaController';
 
 const router = Router();
 
+// Rota pública (sem autenticação) – deve vir antes do authMiddleware
+router.get('/validar/:id', validarReservaQR);
+// Todas as rotas abaixo exigem autenticação
+router.use(authMiddleware);
 // Todas as rotas exigem autenticação
 router.use(authMiddleware);
 

@@ -92,7 +92,7 @@ export default function MinhasReservas() {
   const handleBaixarRecibo = async (reserva: Reserva) => {
     try {
       // Gera o QR code com link de validação
-      const qrData = `https://origens-sabor.vercel.app/reservas/${reserva.id}?codigo=${reserva.codigoRecibo}`;
+      const qrData = `https://origens-sabor.vercel.app/reservas/validar/${reserva.id}?codigo=${reserva.codigoRecibo}`;
       const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
       // Gera o PDF
       const blob = await pdf(<ReciboReservaPDF reserva={reserva} qrDataUrl={qrDataUrl} />).toBlob();
