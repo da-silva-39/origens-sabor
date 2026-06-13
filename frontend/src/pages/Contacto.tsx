@@ -1,9 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from 'react';
-import { FiMapPin, FiPhone, FiMail, FiClock, FiSend, FiMessageSquare, FiFacebook, FiInstagram, FiTwitter } from 'react-icons/fi';
+import { FiMapPin, FiPhone, FiMail, FiClock, FiSend, FiMessageSquare, FiFacebook, FiInstagram } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
-import api from '../services/api';
 
 export default function Contacto() {
   const [formData, setFormData] = useState({
@@ -17,39 +15,50 @@ export default function Contacto() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nome || !formData.email || !formData.mensagem) {
       toast.error('Preencha todos os campos');
       return;
     }
+
     setEnviando(true);
-    try {
-      // Opcional: enviar para uma rota de contacto (se existir no backend)
-      // await api.post('/contacto', formData);
-      toast.success('Mensagem enviada com sucesso! Entraremos em contacto brevemente.');
-      setFormData({ nome: '', email: '', mensagem: '' });
-    } catch (error) {
-      toast.error('Erro ao enviar mensagem. Tente novamente mais tarde.');
-    } finally {
-      setEnviando(false);
-    }
+
+    // Número do restaurante (começa com 86)
+    const phoneNumber = '258860151122'; // apenas números, sem + ou espaços
+
+    // Construir a mensagem
+    const message = `*Nova mensagem do site - Origens do Sabor*%0A%0A
+*Nome:* ${formData.nome}%0A
+*E-mail:* ${formData.email}%0A
+*Mensagem:* ${formData.mensagem}%0A%0A
+Enviado através do formulário de contacto.`;
+
+    // Criar link do WhatsApp
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+
+    // Abrir em nova aba
+    window.open(whatsappUrl, '_blank');
+
+    toast.success('A abrir WhatsApp... Envie a mensagem para concluir.');
+    setFormData({ nome: '', email: '', mensagem: '' });
+    setEnviando(false);
   };
 
   return (
     <div className="min-h-screen bg-fundo py-12">
       <div className="container-custom px-4">
-        {/* Título */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-secundaria mb-4">Fale Connosco</h1>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Estamos aqui para ouvir as suas sugestões, dúvidas ou elogios. Entre em contacto através dos canais abaixo ou preencha o formulário.
+            Estamos aqui para ouvir as suas sugestões, dúvidas ou elogios. Preencha o formulário e será redirecionado ao WhatsApp do restaurante.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Informações de contacto */}
+          {/* Informações de contacto (mesmo código anterior) */}
           <div className="space-y-8">
+            {/* ... mantenha as secções de mapa, contactos e redes sociais como já estavam ... */}
             <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
               <h2 className="text-2xl font-semibold text-secundaria mb-6 flex items-center gap-2">
                 <FiMapPin className="text-primaria" /> Onde Estamos
@@ -106,35 +115,20 @@ export default function Contacto() {
                 <FiMessageSquare className="text-primaria" /> Redes Sociais
               </h2>
               <div className="flex flex-wrap gap-4">
-                <a
-                  href="https://www.instagram.com/origens_do_sabor_restaurante_/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCAF45] text-white px-4 py-2 rounded-full hover:opacity-90 transition"
-                >
+                <a href="https://www.instagram.com/origens_do_sabor_restaurante_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCAF45] text-white px-4 py-2 rounded-full hover:opacity-90 transition">
                   <FiInstagram size={20} /> Instagram
                 </a>
-                <a
-                  href="https://web.facebook.com/p/Origens-do-sabor-61572114920143"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-[#1877F2] text-white px-4 py-2 rounded-full hover:bg-[#0E5A9E] transition"
-                >
+                <a href="https://web.facebook.com/p/Origens-do-sabor-61572114920143" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-[#1877F2] text-white px-4 py-2 rounded-full hover:bg-[#0E5A9E] transition">
                   <FiFacebook size={20} /> Facebook
                 </a>
-                <a
-                  href="https://wa.me/258860151122"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-full hover:bg-[#128C7E] transition"
-                >
+                <a href="https://wa.me/258860151122" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-full hover:bg-[#128C7E] transition">
                   <FaWhatsapp size={20} /> WhatsApp
                 </a>
               </div>
             </div>
           </div>
 
-          {/* Formulário de contacto */}
+          {/* Formulário de contacto (agora com WhatsApp) */}
           <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
             <h2 className="text-2xl font-semibold text-secundaria mb-6 flex items-center gap-2">
               <FiSend className="text-primaria" /> Envie-nos uma Mensagem
@@ -181,12 +175,12 @@ export default function Contacto() {
                 disabled={enviando}
                 className="w-full bg-primaria hover:bg-secundaria text-white font-semibold py-3 rounded-xl transition transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                <FiSend size={20} />
-                {enviando ? 'A enviar...' : 'Enviar Mensagem'}
+                <FaWhatsapp size={20} />
+                {enviando ? 'A processar...' : 'Enviar via WhatsApp'}
               </button>
             </form>
             <p className="text-gray-500 text-xs text-center mt-4">
-              Os seus dados não serão partilhados com terceiros. Responderemos o mais breve possível.
+              Ao clicar, será aberto o WhatsApp com a mensagem pré‑preenchida. Basta enviar.
             </p>
           </div>
         </div>
