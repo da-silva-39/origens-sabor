@@ -36,7 +36,7 @@ export default function Home() {
   };
 
   const handleManualClick = () => {
-    navigate("/Manual.tsx");
+    navigate("/manual");
   };
 
   return (
