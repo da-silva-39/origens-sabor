@@ -9,6 +9,7 @@ function gerarCodigoRecibo(): string {
   return randomBytes(8).toString('hex').toUpperCase();
 }
 
+// Criar reserva (cliente)
 export const criarReserva = async (req: Request, res: Response) => {
   const user = (req as any).user;
   const userId = user.id;
@@ -23,7 +24,6 @@ export const criarReserva = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Data/hora inválida' });
   }
 
-  // Verifica conflito de horário
   const reservaConflito = await prisma.reserva.findFirst({
     where: {
       mesaId,
@@ -54,13 +54,12 @@ export const criarReserva = async (req: Request, res: Response) => {
       include: { cliente: { select: { nome: true, email: true, telefone: true } }, mesa: true },
     });
 
-    // Notificar admin via WhatsApp
     await sendReservaWhatsApp({
       id: reserva.id,
       clienteNome: user.nome,
       clienteEmail: user.email,
       clienteTelefone: user.telefone,
-      mesaNumero: mesa.numero, // agora o campo numero existe
+      mesaNumero: mesa.numero,
       dataHora: dataHoraObj,
       quantidadePessoas,
       observacoes,
@@ -74,12 +73,16 @@ export const criarReserva = async (req: Request, res: Response) => {
   }
 };
 
+// Listar reservas do cliente (inclui dados do cliente e da mesa)
 export const minhasReservas = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   try {
     const reservas = await prisma.reserva.findMany({
       where: { clienteId: userId },
-      include: { mesa: true },
+      include: {
+        cliente: { select: { nome: true, email: true, telefone: true } },
+        mesa: true, // inclui todos os campos da mesa, incluindo numero
+      },
       orderBy: { dataHora: 'asc' },
     });
     res.json(reservas);
@@ -89,6 +92,7 @@ export const minhasReservas = async (req: Request, res: Response) => {
   }
 };
 
+// Cancelar reserva (cliente)
 export const cancelarReserva = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const { id } = req.params;
@@ -114,6 +118,7 @@ export const cancelarReserva = async (req: Request, res: Response) => {
   }
 };
 
+// ADMIN: listar todas reservas
 export const listarTodasReservas = async (req: Request, res: Response) => {
   try {
     const reservas = await prisma.reserva.findMany({
@@ -127,6 +132,7 @@ export const listarTodasReservas = async (req: Request, res: Response) => {
   }
 };
 
+// ADMIN: confirmar reserva
 export const confirmarReserva = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
@@ -142,6 +148,7 @@ export const confirmarReserva = async (req: Request, res: Response) => {
   }
 };
 
+// ADMIN: cancelar reserva
 export const adminCancelarReserva = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
@@ -156,6 +163,7 @@ export const adminCancelarReserva = async (req: Request, res: Response) => {
   }
 };
 
+// Obter reserva (para gerar PDF)
 export const obterReserva = async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = (req as any).user.id;

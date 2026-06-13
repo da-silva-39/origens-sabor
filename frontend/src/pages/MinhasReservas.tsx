@@ -15,7 +15,7 @@ interface Reserva {
   quantidadePessoas: number;
   status: string;
   codigoRecibo: string;
-  mesa: { numero: number };
+  mesa: { id: number; numero: number; qrCode?: string; ocupada?: boolean };
   cliente: { nome: string; email: string; telefone?: string };
   observacoes?: string;
 }
@@ -65,6 +65,7 @@ export default function MinhasReservas() {
         return novas;
       });
     } catch (error) {
+      console.error('Erro ao carregar reservas:', error);
       toast.error('Erro ao carregar reservas');
     } finally {
       setCarregando(false);
@@ -89,10 +90,11 @@ export default function MinhasReservas() {
   };
 
   const handleBaixarRecibo = async (reserva: Reserva) => {
-      console.log('Reserva:', reserva);  // ← adicione
     try {
+      // Gera o QR code com link de validação
       const qrData = `https://origens-sabor.vercel.app/reservas/${reserva.id}?codigo=${reserva.codigoRecibo}`;
-      const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200 });
+      const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
+      // Gera o PDF
       const blob = await pdf(<ReciboReservaPDF reserva={reserva} qrDataUrl={qrDataUrl} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -101,8 +103,8 @@ export default function MinhasReservas() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error(error);
-      toast.error('Erro ao gerar PDF');
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF. Verifique se os dados da reserva estão completos.');
     }
   };
 
@@ -112,7 +114,7 @@ export default function MinhasReservas() {
     <div className="container-custom py-8">
       <h1 className="text-3xl font-bold mb-6">Minhas Reservas</h1>
       {reservas.length === 0 ? (
-        <p>Nenhuma reserva encontrada.</p>
+        <p className="text-gray-500">Nenhuma reserva encontrada.</p>
       ) : (
         <div className="grid gap-6">
           {reservas.map((r) => (
@@ -134,7 +136,7 @@ export default function MinhasReservas() {
                 {(r.status === 'PENDENTE' || r.status === 'CONFIRMADA') && (
                   <button
                     onClick={() => handleCancelar(r.id)}
-                    className="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600"
+                    className="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 transition"
                   >
                     Cancelar
                   </button>
@@ -142,7 +144,7 @@ export default function MinhasReservas() {
                 {r.status === 'CONFIRMADA' && (
                   <button
                     onClick={() => handleBaixarRecibo(r)}
-                    className="bg-primaria text-white px-4 py-2 rounded-full hover:bg-secundaria"
+                    className="bg-primaria text-white px-4 py-2 rounded-full hover:bg-secundaria transition"
                   >
                     Baixar Recibo
                   </button>
