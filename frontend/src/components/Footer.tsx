@@ -1,10 +1,23 @@
-import { Link } from 'react-router-dom';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Link, useNavigate } from 'react-router-dom';
 import { FaInstagram, FaFacebook, FaWhatsapp, FaArrowUp } from 'react-icons/fa';
 import { FiMapPin, FiPhone, FiMail, FiClock } from 'react-icons/fi';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Footer() {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleProtectedClick = (path: string) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    } else {
+      navigate(path);
+    }
   };
 
   return (
@@ -48,31 +61,43 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Links rápidos */}
+          {/* Links rápidos (protegidos) */}
           <div>
             <h3 className="text-xl font-semibold mb-4 relative inline-block after:content-[''] after:absolute after:bottom-[-8px] after:left-0 after:w-12 after:h-0.5 after:bg-primaria">
               Navegação
             </h3>
             <ul className="space-y-2 text-gray-200">
               <li>
-                <Link to="/cardapio" className="hover:text-white transition-colors flex items-center gap-2">
+                <button
+                  onClick={() => handleProtectedClick('/cardapio')}
+                  className="hover:text-white transition-colors flex items-center gap-2 w-full text-left cursor-pointer"
+                >
                   🍽️ Cardápio
-                </Link>
+                </button>
               </li>
               <li>
-                <Link to="/reservar-mesa" className="hover:text-white transition-colors flex items-center gap-2">
+                <button
+                  onClick={() => handleProtectedClick('/reservar-mesa')}
+                  className="hover:text-white transition-colors flex items-center gap-2 w-full text-left cursor-pointer"
+                >
                   📅 Reservar Mesa
-                </Link>
+                </button>
               </li>
               <li>
-                <Link to="/minhas-reservas" className="hover:text-white transition-colors flex items-center gap-2">
+                <button
+                  onClick={() => handleProtectedClick('/minhas-reservas')}
+                  className="hover:text-white transition-colors flex items-center gap-2 w-full text-left cursor-pointer"
+                >
                   📋 Minhas Reservas
-                </Link>
+                </button>
               </li>
               <li>
-                <Link to="/perfil" className="hover:text-white transition-colors flex items-center gap-2">
+                <button
+                  onClick={() => handleProtectedClick('/perfil')}
+                  className="hover:text-white transition-colors flex items-center gap-2 w-full text-left cursor-pointer"
+                >
                   👤 Meu Perfil
-                </Link>
+                </button>
               </li>
             </ul>
           </div>
@@ -141,7 +166,7 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Botão Voltar ao Topo (apenas mobile/desktop flutuante) */}
+      {/* Botão Voltar ao Topo */}
       <button
         onClick={scrollToTop}
         className="fixed bottom-6 right-6 bg-primaria hover:bg-secundaria text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 z-40 focus:outline-none"
