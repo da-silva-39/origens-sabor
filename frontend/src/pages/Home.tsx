@@ -5,7 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const { isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
 
   const slides = [
@@ -80,6 +80,22 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Banner de boas‑vindas para utilizadores autenticados */}
+        {isAuthenticated && (
+          <div className="bg-gradient-to-r from-primaria to-secundaria text-white py-6">
+            <div className="container-custom text-center">
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">Bem‑vindo de volta, {user?.nome?.split(' ')[0]}! 👋</h2>
+              <p className="text-lg mb-4">Aproveite ao máximo o nosso sistema:</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <button onClick={() => navigate("/cardapio")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">🍽️ Explorar Cardápio</button>
+                <button onClick={() => navigate("/reservar-mesa")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">📅 Reservar Mesa</button>
+                <button onClick={() => navigate("/minhas-reservas")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">📋 Minhas Reservas</button>
+                <button onClick={() => navigate("/perfil")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">👤 Meu Perfil</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Estatísticas */}
         <section className="py-16 bg-fundo">
           <div className="container-custom">
@@ -92,59 +108,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Características */}
-        <section className="py-16 bg-white">
-          <div className="container-custom">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">Porquê escolher-nos?</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              {[
-                { icon: "🍳", title: "Culinária Diversificada", text: "Sabores que encantam, do tradicional ao contemporâneo." },
-                { icon: "🍷", title: "Ambiente Acolhedor", text: "Espaço familiar, ideal para momentos especiais." },
-                { icon: "🛵", title: "Delivery Rápido", text: "Receba o seu pedido em casa com segurança." },
-                { icon: "⭐", title: "Tradição e Sabor", text: "Receitas que respeitam as origens, com toque moderno." },
-              ].map((feature, i) => (
-                <div key={i} className="text-center p-6 rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-2 duration-300">
-                  <div className="text-5xl mb-4">{feature.icon}</div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-gray-600">{feature.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Pratos em destaque */}
-        <section className="py-16 bg-fundo">
-          <div className="container-custom">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">Pratos em Destaque</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                { img: "/pizza.jpg", nome: "Pizza Margherita", desc: "Molho de tomate, mussarela, manjericão.", preco: 450 },
-                { img: "https://images.pexels.com/photos/1633578/pexels-photo-1633578.jpeg?w=400", nome: "Hambúrguer Artesanal", desc: "180g carne, queijo cheddar, alface, tomate.", preco: 320 },
-                { img: "/Imagens Corretas/1-4 frango grelhado.jpg", nome: "Frango Grelhado", desc: "¼ frango com batata e arroz.", preco: 400 },
-              ].map((prato, i) => (
-                <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition transform hover:-translate-y-2 duration-300">
-                  <div className="relative h-56 overflow-hidden">
-                    <img src={prato.img} alt={prato.nome} className="w-full h-full object-cover transition hover:scale-105 duration-500" />
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold mb-2">{prato.nome}</h3>
-                    <p className="text-gray-600 mb-4">{prato.desc}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-primaria">{prato.preco} MT</span>
-                      <button onClick={() => handleProtectedClick("/cardapio")} className="bg-primaria text-white px-4 py-2 rounded-full hover:bg-secundaria transition">Adicionar</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="text-center mt-12">
-              <button onClick={() => handleProtectedClick("/cardapio")} className="bg-secundaria text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-primaria transition transform hover:scale-105">Ver Cardápio Completo</button>
-            </div>
-          </div>
-        </section>
-
-        {/* Como usar o sistema (incluindo reservas) */}
+        {/* Como usar o sistema (movido para antes de "Porquê escolher-nos") */}
         <section id="como-usar" className="py-16 bg-white">
           <div className="container-custom">
             <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">Como usar o sistema</h2>
@@ -174,6 +138,58 @@ export default function Home() {
               <button onClick={handleManualClick} className="bg-primaria text-white px-6 py-2 rounded-full hover:bg-secundaria transition transform hover:scale-105 inline-flex items-center gap-2">
                 📖 Manual do Utilizador
               </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Características (Porquê escolher-nos?) */}
+        <section className="py-16 bg-fundo">
+          <div className="container-custom">
+            <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">Porquê escolher-nos?</h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {[
+                { icon: "🍳", title: "Culinária Diversificada", text: "Sabores que encantam, do tradicional ao contemporâneo." },
+                { icon: "🍷", title: "Ambiente Acolhedor", text: "Espaço familiar, ideal para momentos especiais." },
+                { icon: "🛵", title: "Delivery Rápido", text: "Receba o seu pedido em casa com segurança." },
+                { icon: "⭐", title: "Tradição e Sabor", text: "Receitas que respeitam as origens, com toque moderno." },
+              ].map((feature, i) => (
+                <div key={i} className="text-center p-6 rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-2 duration-300 bg-white">
+                  <div className="text-5xl mb-4">{feature.icon}</div>
+                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-gray-600">{feature.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Pratos em destaque */}
+        <section className="py-16 bg-white">
+          <div className="container-custom">
+            <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">Pratos em Destaque</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[
+                { img: "/pizza.jpg", nome: "Pizza Margherita", desc: "Molho de tomate, mussarela, manjericão.", preco: 450 },
+                { img: "https://images.pexels.com/photos/1633578/pexels-photo-1633578.jpeg?w=400", nome: "Hambúrguer Artesanal", desc: "180g carne, queijo cheddar, alface, tomate.", preco: 320 },
+                { img: "/Imagens Corretas/1-4 frango grelhado.jpg", nome: "Frango Grelhado", desc: "¼ frango com batata e arroz.", preco: 400 },
+              ].map((prato, i) => (
+                <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition transform hover:-translate-y-2 duration-300">
+                  <div className="relative h-56 overflow-hidden">
+                    <img src={prato.img} alt={prato.nome} className="w-full h-full object-cover transition hover:scale-105 duration-500" />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold mb-2">{prato.nome}</h3>
+                    <p className="text-gray-600 mb-4">{prato.desc}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-2xl font-bold text-primaria">{prato.preco} MT</span>
+                      <button onClick={() => handleProtectedClick("/cardapio")} className="bg-primaria text-white px-4 py-2 rounded-full hover:bg-secundaria transition">Adicionar</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="text-center mt-12">
+              <button onClick={() => handleProtectedClick("/cardapio")} className="bg-secundaria text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-primaria transition transform hover:scale-105">Ver Cardápio Completo</button>
             </div>
           </div>
         </section>
