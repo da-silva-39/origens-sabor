@@ -92,12 +92,11 @@ model ItemPedido {
 
 model Mesa {
   id            Int     @id
+  numero        Int     @unique   // ← novo campo
   qrCode        String? @unique @map("qrCode")
   ocupada       Boolean @default(false)
   pedidoAtualId String? @map("pedidoAtualId")
-
-  reservas Reserva[]
-
+  reservas      Reserva[]
   @@map("mesas")
 }
 

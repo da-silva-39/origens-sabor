@@ -19,3 +19,20 @@
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 }
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.animate-enter {
+  animation: slideInUp 0.3s ease-out;
+}
+.animate-leave {
+  animation: slideOutDown 0.2s ease-in;
+}
