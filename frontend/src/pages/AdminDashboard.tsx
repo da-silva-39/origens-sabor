@@ -103,7 +103,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Ações rápidas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           <Link
             to="/admin/usuarios"
             className="group bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-xl transition transform hover:-translate-y-1"
@@ -127,6 +127,23 @@ export default function AdminDashboard() {
             <div className="text-5xl mb-2">📦</div>
             <h2 className="text-xl font-semibold text-secundaria">Pedidos</h2>
             <p className="text-gray-600 mt-1">Acompanhar e actualizar status</p>
+          </Link>
+          {/* Novos cards */}
+          <Link
+            to="/admin/reservas"
+            className="group bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-xl transition transform hover:-translate-y-1"
+          >
+            <div className="text-5xl mb-2">📅</div>
+            <h2 className="text-xl font-semibold text-secundaria">Reservas</h2>
+            <p className="text-gray-600 mt-1">Gerir pedidos de reserva de mesas</p>
+          </Link>
+          <Link
+            to="/admin/mesas"
+            className="group bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-xl transition transform hover:-translate-y-1"
+          >
+            <div className="text-5xl mb-2">🪑</div>
+            <h2 className="text-xl font-semibold text-secundaria">Mesas</h2>
+            <p className="text-gray-600 mt-1">CRUD de mesas e QR codes</p>
           </Link>
         </div>
       </div>

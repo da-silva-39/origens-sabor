@@ -17,6 +17,11 @@ export default function Navbar() {
   const btnLoginDesktop = "px-6 py-2 rounded-full bg-white text-primaria font-semibold hover:bg-secundaria hover:text-white transition duration-300";
   const btnLoginMobile = `${btnLoginDesktop} w-full text-center`;
 
+  // Só mostrar links de cliente (carrinho, reservas) se for CLIENTE
+  const isCliente = user?.role === 'CLIENTE';
+  const isAdmin = user?.role === 'ADMIN';
+  const isAgente = user?.role === 'AGENTE';
+
   return (
     <nav className="bg-primaria text-white sticky top-0 z-50 shadow-md">
       <div className="container-custom flex justify-between items-center py-4">
@@ -27,28 +32,47 @@ export default function Navbar() {
         {/* Links para desktop */}
         <div className="hidden md:flex items-center gap-3">
           <Link to="/" className={linkDesktop}>Início</Link>
-          <Link to="/contacto" className={linkDesktop}>Contactar</Link>
+
+          {/* Contacto só para não autenticados e clientes (e agentes talvez) */}
+          {(!isAuthenticated || isCliente || isAgente) && (
+            <Link to="/contacto" className={linkDesktop}>Contactar</Link>
+          )}
 
           {isAuthenticated ? (
             <>
-              <Link to="/cardapio" className={linkDesktop}>Cardápio</Link>
-              <Link to="/carrinho" className={linkDesktop}>Carrinho</Link>
-              
-              <Link to="/reservar-mesa" className={linkDesktop}>Reservar Mesa</Link>
-              <Link to="/minhas-reservas" className={linkDesktop}>Minhas Reservas</Link>
+              {/* Cardápio: para admin mostra versão sem carrinho */}
+              <Link to={isAdmin ? "/admin/cardapio" : "/cardapio"} className={linkDesktop}>
+                Cardápio
+              </Link>
 
-              {user?.role === 'ADMIN' && (
+              {/* Links exclusivos para cliente */}
+              {isCliente && (
+                <>
+                  <Link to="/carrinho" className={linkDesktop}>Carrinho</Link>
+                  <Link to="/reservar-mesa" className={linkDesktop}>Reservar Mesa</Link>
+                  <Link to="/minhas-reservas" className={linkDesktop}>Minhas Reservas</Link>
+                </>
+              )}
+
+              {/* Admin links */}
+              {isAdmin && (
                 <>
                   <Link to="/admin/dashboard" className={linkDesktop}>Admin</Link>
                   <Link to="/admin/reservas" className={linkDesktop}>Gerir Reservas</Link>
+                  <Link to="/admin/mesas" className={linkDesktop}>Mesas</Link>
                 </>
               )}
-              {user?.role === 'AGENTE' && (
+
+              {/* Agente links */}
+              {isAgente && (
                 <Link to="/agente/dashboard" className={linkDesktop}>Dashboard</Link>
               )}
-              {user?.role === 'CLIENTE' && (
+
+              {/* Dashboard do cliente (se for cliente) */}
+              {isCliente && (
                 <Link to="/dashboard" className={linkDesktop}>Dashboard</Link>
               )}
+
               <Link to="/perfil" className={linkDesktop}>Perfil</Link>
               <button
                 onClick={logout}
@@ -75,24 +99,32 @@ export default function Navbar() {
       {menuAberto && (
         <div className="md:hidden bg-primaria py-4 px-6 flex flex-col gap-3 border-t border-white/20">
           <Link to="/" onClick={fecharMenu} className={linkMobile}>Início</Link>
-          <Link to="/contacto" onClick={fecharMenu} className={linkMobile}>Contactar</Link>
+          {(!isAuthenticated || isCliente || isAgente) && (
+            <Link to="/contacto" onClick={fecharMenu} className={linkMobile}>Contactar</Link>
+          )}
           {isAuthenticated ? (
             <>
-              <Link to="/cardapio" onClick={fecharMenu} className={linkMobile}>Cardápio</Link>
-              <Link to="/carrinho" onClick={fecharMenu} className={linkMobile}>Carrinho</Link>
-              <Link to="/reservar-mesa" onClick={fecharMenu} className={linkMobile}>Reservar Mesa</Link>
-              <Link to="/minhas-reservas" onClick={fecharMenu} className={linkMobile}>Minhas Reservas</Link>
-
-              {user?.role === 'ADMIN' && (
+              <Link to={isAdmin ? "/admin/cardapio" : "/cardapio"} onClick={fecharMenu} className={linkMobile}>
+                Cardápio
+              </Link>
+              {isCliente && (
+                <>
+                  <Link to="/carrinho" onClick={fecharMenu} className={linkMobile}>Carrinho</Link>
+                  <Link to="/reservar-mesa" onClick={fecharMenu} className={linkMobile}>Reservar Mesa</Link>
+                  <Link to="/minhas-reservas" onClick={fecharMenu} className={linkMobile}>Minhas Reservas</Link>
+                </>
+              )}
+              {isAdmin && (
                 <>
                   <Link to="/admin/dashboard" onClick={fecharMenu} className={linkMobile}>Admin</Link>
                   <Link to="/admin/reservas" onClick={fecharMenu} className={linkMobile}>Gerir Reservas</Link>
+                  <Link to="/admin/mesas" onClick={fecharMenu} className={linkMobile}>Mesas</Link>
                 </>
               )}
-              {user?.role === 'AGENTE' && (
+              {isAgente && (
                 <Link to="/agente/dashboard" onClick={fecharMenu} className={linkMobile}>Dashboard</Link>
               )}
-              {user?.role === 'CLIENTE' && (
+              {isCliente && (
                 <Link to="/dashboard" onClick={fecharMenu} className={linkMobile}>Dashboard</Link>
               )}
               <Link to="/perfil" onClick={fecharMenu} className={linkMobile}>Perfil</Link>

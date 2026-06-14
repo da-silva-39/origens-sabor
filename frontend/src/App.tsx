@@ -25,7 +25,7 @@ import Contacto from './pages/Contacto';
 import Manual from './pages/Manual';
 import ValidarReserva from './pages/ValidarReserva';
 import MeusPedidos from './pages/MeusPedidos';
-
+import AdminCardapio from './pages/AdminCardapio';
 
 
 
@@ -58,6 +58,7 @@ function App() {
             <Route path="/manual" element={<Manual />} />
             <Route path="/reservas/validar/:id" element={<ValidarReserva />} />
             <Route path="/meus-pedidos" element={<MeusPedidos />} />
+            <Route path="/admin/cardapio" element={<AdminCardapio />} />
           </Routes>
         </main>
         <Footer />
