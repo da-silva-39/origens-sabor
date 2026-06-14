@@ -23,7 +23,10 @@ export default function ReservarMesa() {
   const [observacoes, setObservacoes] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [carregandoMesas, setCarregandoMesas] = useState(true);
+  const [disponivel, setDisponivel] = useState<boolean | null>(null);
+  const [verificando, setVerificando] = useState(false);
 
+  // Carregar mesas disponíveis
   useEffect(() => {
     const fetchMesas = async () => {
       try {
@@ -38,10 +41,38 @@ export default function ReservarMesa() {
     fetchMesas();
   }, []);
 
+  // Verificar disponibilidade da mesa para a data/hora selecionada
+  useEffect(() => {
+    const checkDisponibilidade = async () => {
+      if (!mesaId || !dataHora) {
+        setDisponivel(null);
+        return;
+      }
+      setVerificando(true);
+      try {
+        const res = await api.get(`/reservas/disponibilidade?mesaId=${mesaId}&dataHora=${dataHora}`);
+        setDisponivel(res.data.disponivel);
+      } catch (error) {
+        setDisponivel(null);
+      } finally {
+        setVerificando(false);
+      }
+    };
+
+    const timer = setTimeout(checkDisponibilidade, 500); // debounce
+    return () => clearTimeout(timer);
+  }, [mesaId, dataHora]);
+
+  const selecionarMesa = (id: number) => {
+    setMesaId(id);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mesaId) return toast.error('Selecione uma mesa');
     if (!dataHora) return toast.error('Selecione data e hora');
+    if (disponivel === false) return toast.error('Esta mesa já não está disponível para o horário selecionado.');
+
     setCarregando(true);
     try {
       await api.post('/reservas', {
@@ -57,11 +88,6 @@ export default function ReservarMesa() {
     } finally {
       setCarregando(false);
     }
-  };
-
-  // Selecionar mesa ao clicar no card
-  const selecionarMesa = (id: number) => {
-    setMesaId(id);
   };
 
   return (
@@ -170,6 +196,7 @@ export default function ReservarMesa() {
                 ))}
               </select>
             </div>
+
             <div>
               <label className="block font-medium text-gray-700 mb-1">Data e Hora</label>
               <input
@@ -181,6 +208,26 @@ export default function ReservarMesa() {
               />
               <p className="text-xs text-gray-400 mt-1">Horário mínimo de reserva: 1 hora a partir do momento atual.</p>
             </div>
+
+            {/* Indicador de disponibilidade em tempo real */}
+            {mesaId && dataHora && (
+              <div className="mt-2">
+                {verificando ? (
+                  <p className="text-gray-500 text-sm flex items-center gap-1">
+                    <FiInfo className="animate-pulse" /> A verificar disponibilidade...
+                  </p>
+                ) : disponivel === true ? (
+                  <p className="text-green-600 text-sm flex items-center gap-1">
+                    <FiCheckCircle /> Mesa disponível para este horário.
+                  </p>
+                ) : disponivel === false ? (
+                  <p className="text-red-600 text-sm flex items-center gap-1">
+                    <FiAlertCircle /> Esta mesa já está reservada para este horário.
+                  </p>
+                ) : null}
+              </div>
+            )}
+
             <div>
               <label className="block font-medium text-gray-700 mb-1">Número de pessoas</label>
               <div className="flex items-center gap-2">
@@ -196,6 +243,7 @@ export default function ReservarMesa() {
                 />
               </div>
             </div>
+
             <div>
               <label className="block font-medium text-gray-700 mb-1">Observações (opcional)</label>
               <textarea
@@ -206,10 +254,11 @@ export default function ReservarMesa() {
                 placeholder="Ex: pedido especial, cadeira de bebé, etc."
               />
             </div>
+
             <button
               type="submit"
-              disabled={carregando}
-              className="w-full bg-primaria hover:bg-secundaria text-white font-semibold py-3 rounded-xl transition transform hover:scale-[1.02] disabled:opacity-50"
+              disabled={carregando || disponivel === false}
+              className="w-full bg-primaria hover:bg-secundaria text-white font-semibold py-3 rounded-xl transition transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {carregando ? 'A processar...' : 'Solicitar Reserva'}
             </button>

@@ -83,6 +83,9 @@ export const listarPedidosCliente = async (req: Request, res: Response) => {
   try {
     const pedidos = await prisma.pedido.findMany({
       where: { clienteId: userId },
+      include: {
+        itens: true, // inclui os itens do pedido
+      },
       orderBy: { dataPedido: 'desc' },
     });
     res.json(pedidos);

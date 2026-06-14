@@ -226,3 +226,27 @@ export const validarReservaQR = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Erro ao validar reserva' });
   }
 };
+
+// Verificar disponibilidade da mesa para uma data/hora específica
+export const verificarDisponibilidade = async (req: Request, res: Response) => {
+  const { mesaId, dataHora } = req.query;
+
+  if (!mesaId || !dataHora) {
+    return res.status(400).json({ error: 'Faltam parâmetros' });
+  }
+
+  const dataHoraObj = new Date(dataHora as string);
+  if (isNaN(dataHoraObj.getTime())) {
+    return res.status(400).json({ error: 'Data/hora inválida' });
+  }
+
+  const reservaConflito = await prisma.reserva.findFirst({
+    where: {
+      mesaId: Number(mesaId),
+      dataHora: dataHoraObj,
+      status: { in: ['PENDENTE', 'CONFIRMADA'] },
+    },
+  });
+
+  res.json({ disponivel: !reservaConflito });
+};
