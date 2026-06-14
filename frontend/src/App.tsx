@@ -26,6 +26,7 @@ import Manual from './pages/Manual';
 import ValidarReserva from './pages/ValidarReserva';
 import MeusPedidos from './pages/MeusPedidos';
 import AdminCardapio from './pages/AdminCardapio';
+import AdminMesas from './pages/AdminMesas';
 
 
 
@@ -59,6 +60,7 @@ function App() {
             <Route path="/reservas/validar/:id" element={<ValidarReserva />} />
             <Route path="/meus-pedidos" element={<MeusPedidos />} />
             <Route path="/admin/cardapio" element={<AdminCardapio />} />
+            <Route path="/admin/mesas" element={<AdminMesas />} />
           </Routes>
         </main>
         <Footer />

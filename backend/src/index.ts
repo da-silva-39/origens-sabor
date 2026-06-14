@@ -13,7 +13,8 @@ import produtoRoutes from './routes/produtoRoutes';
 import freteRoutes from './routes/freteRoutes';
 import reservaRoutes from './routes/reservaRoutes';
 import mesaRoutes from './routes/mesaRoutes';
-// ...
+import adminMesaRoutes from './routes/adminMesaRoutes';
+
 
 
 
@@ -52,6 +53,7 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use('/api/admin/mesas', adminMesaRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
