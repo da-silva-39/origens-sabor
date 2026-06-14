@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 
-import { FiPackage, FiClock, FiDollarSign, FiShoppingCart, FiCoffee, FiArrowRight } from 'react-icons/fi';
+import { FiPackage, FiClock, FiDollarSign, FiShoppingCart, FiCoffee, FiArrowRight, FiCalendar, FiList, FiPhone } from 'react-icons/fi';
 import { HiOutlineEmojiHappy } from 'react-icons/hi';
 
 interface Pedido {
@@ -77,7 +77,7 @@ export default function Dashboard() {
                     Olá, {user?.nome} 👋
                   </h1>
                   <p className="text-gray-500 mt-1">
-                    Que bom ter‑lo de volta! Pronto para fazer o seu pedido?
+                    Que bom ter‑lo de volta! Pronto para fazer o seu pedido ou reservar uma mesa?
                   </p>
                 </div>
               </div>
@@ -116,8 +116,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Ações rápidas com ícones e descrições mais cativantes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Ações rápidas com ícones e descrições – agora com 5 opções */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <Link
               to="/cardapio"
               className="group relative overflow-hidden bg-gradient-to-r from-primaria to-orange-600 text-white rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
@@ -130,6 +130,7 @@ export default function Dashboard() {
                 <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
               </div>
             </Link>
+
             <Link
               to="/carrinho"
               className="group relative overflow-hidden bg-gradient-to-r from-secundaria to-amber-800 text-white rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
@@ -142,9 +143,47 @@ export default function Dashboard() {
                 <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
               </div>
             </Link>
+
+            <Link
+              to="/reservar-mesa"
+              className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+            >
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
+              <div className="relative z-10">
+                <div className="text-5xl mb-3">📅</div>
+                <div className="text-xl font-semibold">Reservar Mesa</div>
+                <p className="text-sm opacity-90 mt-2">Garanta o seu lugar para uma refeição especial</p>
+                <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
+              </div>
+            </Link>
+
+            <Link
+              to="/minhas-reservas"
+              className="group relative overflow-hidden bg-gradient-to-r from-teal-600 to-teal-800 text-white rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+            >
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
+              <div className="relative z-10">
+                <div className="text-5xl mb-3">📋</div>
+                <div className="text-xl font-semibold">Minhas Reservas</div>
+                <p className="text-sm opacity-90 mt-2">Acompanhe e faça download dos recibos</p>
+                <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
+              </div>
+            </Link>
+
+            <Link
+              to="/contacto"
+              className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+            >
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
+              <div className="relative z-10">
+                <div className="text-5xl mb-3">📞</div>
+                <div className="text-xl font-semibold">Contactar</div>
+                <p className="text-sm opacity-90 mt-2">Dúvidas? Sugestões? Fale connosco</p>
+                <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
+              </div>
+            </Link>
           </div>
 
-          {/* Últimos pedidos - design mais clean */}
           <div className="bg-white rounded-2xl shadow-md p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-2xl font-bold text-secundaria flex items-center gap-2">
