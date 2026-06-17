@@ -9,10 +9,10 @@ export default function Home() {
   const navigate = useNavigate();
 
   const slides = [
-    { src: "https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?w=1200", alt: "Ambiente", title: "Bem-vindo ao Origens do Sabor", desc: "Tradição e inovação na sua mesa." },
-    { src: "/pizza cliente.jpg", alt: "Pratos", title: "Sabores que encantam", desc: "Ingredientes frescos e receitas únicas." },
+    { src: "https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?w=1200", alt: "Ambiente", title: "Bem-vindo ao Origens do Sabor", desc: "Restaurante e Bar Origens do Sabor." },
+    { src: "/pizza cliente.jpg", alt: "Pratos", title: "Visite-nos", desc: "Abertos de segunda a domingo, nos horarios abaixo." },
     { src: "/prato apresentacao 2.jpg", alt: "Chef", title: "Culinária de autor", desc: "Preparado com muito carinho." },
-    { src: "/contacto.jpg", alt: "Momentos", title: "Experiência inesquecível", desc: "Venha viver momentos especiais." },
+    { src: "/contacto.jpg", alt: "Momentos", title: "Experiência inesquecível", desc: "Acompanhamos os seus momentos especiais." },
   ];
 
   useEffect(() => {
@@ -100,54 +100,31 @@ export default function Home() {
         {!isAuthenticated && (
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 py-12 border-b border-amber-200">
             <div className="container-custom text-center">
-              <h2 className="text-3xl md:text-4xl font-bold text-secundaria mb-4">🍽️ Faça parte da nossa família!</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-secundaria mb-4">Aderir ao Sistema</h2>
               <p className="text-gray-700 text-lg max-w-2xl mx-auto mb-8">
-                Crie uma conta gratuita e tenha acesso a um mundo de vantagens: faça pedidos online, 
-                reserve a sua mesa com apenas alguns cliques, guarde os seus pratos favoritos e muito mais.
+                Crie uma conta e teras a possibilidade de fazer pedidos online para entrega no conforto da sua casa, 
+                reservar uma mesa no restaurante, guarde os seus pratos favoritos e muito mais.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <button
                   onClick={() => navigate("/registro")}
                   className="bg-primaria text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-secundaria transition transform hover:scale-105 shadow-md"
                 >
-                  📝 Criar Conta Grátis
+                  Criar Conta
                 </button>
                 <button
                   onClick={() => navigate("/login")}
                   className="bg-white border-2 border-primaria text-primaria px-8 py-3 rounded-full text-lg font-semibold hover:bg-primaria/10 transition"
                 >
-                  🔐 Já tenho conta
+                  Já tenho conta (entrar)
                 </button>
               </div>
-              <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-left max-w-3xl mx-auto">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">✅</span>
-                  <p className="text-gray-600 text-sm">Pedidos online rápidos e seguros</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">✅</span>
-                  <p className="text-gray-600 text-sm">Reserva de mesas com confirmação por e‑mail</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">✅</span>
-                  <p className="text-gray-600 text-sm">Acompanhamento dos seus pedidos</p>
-                </div>
-              </div>
+             
             </div>
           </div>
         )}
 
-        {/* Estatísticas */}
-        <section className="py-16 bg-fundo">
-          <div className="container-custom">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              <div><div className="text-4xl font-bold text-primaria">2+</div><div>Anos de experiência</div></div>
-              <div><div className="text-4xl font-bold text-primaria">50+</div><div>Pratos no cardápio</div></div>
-              <div><div className="text-4xl font-bold text-primaria">900+</div><div>Clientes satisfeitos</div></div>
-              <div><div className="text-4xl font-bold text-primaria">10+</div><div>Bairros atendidos</div></div>
-            </div>
-          </div>
-        </section>
+        
 
         {/* Como usar o sistema */}
         <section id="como-usar" className="py-16 bg-white">
@@ -162,12 +139,12 @@ export default function Home() {
               <div className="text-center p-6 rounded-2xl hover:shadow-lg transition group">
                 <div className="text-5xl mb-4 bg-primaria/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:bg-primaria/20 transition">2</div>
                 <h3 className="text-xl font-semibold mb-2">Explore o cardápio</h3>
-                <p className="text-gray-600">Adicione os pratos ao carrinho e personalize seu pedido.</p>
+                <p className="text-gray-600">Adicione os pratos ao carrinho e escolha a quantidade para seu pedido.</p>
               </div>
               <div className="text-center p-6 rounded-2xl hover:shadow-lg transition group">
                 <div className="text-5xl mb-4 bg-primaria/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:bg-primaria/20 transition">3</div>
                 <h3 className="text-xl font-semibold mb-2">Finalize e receba</h3>
-                <p className="text-gray-600">Escolha o bairro, calcule o frete e aguarde a entrega.</p>
+                <p className="text-gray-600">Escolha o bairro, calcule o frete e aguarde a entrega, e teras recibo por pdf.</p>
               </div>
               <div className="text-center p-6 rounded-2xl hover:shadow-lg transition group">
                 <div className="text-5xl mb-4 bg-primaria/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:bg-primaria/20 transition">4</div>
@@ -177,32 +154,13 @@ export default function Home() {
             </div>
             <div className="text-center mt-8">
               <button onClick={handleManualClick} className="bg-primaria text-white px-6 py-2 rounded-full hover:bg-secundaria transition transform hover:scale-105 inline-flex items-center gap-2">
-                📖 Manual do Utilizador
+                Manual do Utilizador
               </button>
             </div>
           </div>
         </section>
 
-        {/* Porquê escolher-nos? */}
-        <section className="py-16 bg-fundo">
-          <div className="container-custom">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">Porquê escolher-nos?</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              {[
-                { icon: "🍳", title: "Culinária Diversificada", text: "Sabores que encantam, do tradicional ao contemporâneo." },
-                { icon: "🍷", title: "Ambiente Acolhedor", text: "Espaço familiar, ideal para momentos especiais." },
-                { icon: "🛵", title: "Delivery Rápido", text: "Receba o seu pedido em casa com segurança." },
-                { icon: "⭐", title: "Tradição e Sabor", text: "Receitas que respeitam as origens, com toque moderno." },
-              ].map((feature, i) => (
-                <div key={i} className="text-center p-6 rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-2 duration-300 bg-white">
-                  <div className="text-5xl mb-4">{feature.icon}</div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-gray-600">{feature.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+       
 
         {/* Pratos em destaque */}
         <section className="py-16 bg-white">
@@ -239,10 +197,9 @@ export default function Home() {
         <section className="py-16 bg-fundo">
           <div className="container-custom grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-secundaria mb-6">Conheça a nossa história</h2>
-              <p className="text-gray-700 text-lg mb-6">Há mais de 2 anos, o Origens do Sabor nasceu com o propósito de trazer à mesa o melhor da gastronomia moçambicana.</p>
-              <p className="text-gray-700 text-lg mb-6">Localizado no coração de Chimoio, somos referência em qualidade, atendimento e criatividade. Cada prato é preparado com ingredientes frescos e muito carinho.</p>
-              <p className="text-gray-700 text-lg">Venha viver uma experiência única, onde o sabor e a tradição se encontram.</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-secundaria mb-6">Feedback sobre o restaurante</h2>
+              <p className="text-gray-700 text-lg mb-6">Há mais de 2 anos, o Origens do Sabor tem atuado em chimoio com o propósito de trazer à mesa o melhor da gastronomia.</p>
+              <p className="text-gray-700 text-lg mb-6">Localizado no centro de Chimoio, referenciamos a qualidade, atendimento e criatividade, tanto quanto entregas. Cada prato é preparado com ingredientes frescos e de qualidade.</p>
             </div>
             <div className="relative h-80 rounded-2xl overflow-hidden shadow-xl">
               <img src="/cliente.jpg" alt="Interior do restaurante" className="w-full h-full object-cover" />
@@ -250,30 +207,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Depoimentos */}
-        <section className="py-16 bg-white">
-          <div className="container-custom">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">O que dizem os nossos clientes</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-2">
-                <div className="text-4xl text-primaria mb-4">“</div>
-                <p className="text-gray-700 mb-4">Comida deliciosa e atendimento impecável. O ambiente é muito agradável!</p>
-                <div className="font-semibold">— Ana Maria</div>
-              </div>
-              <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-2">
-                <div className="text-4xl text-primaria mb-4">“</div>
-                <p className="text-gray-700 mb-4">O melhor restaurante de Chimoio! Peço delivery sempre e chega rápido.</p>
-                <div className="font-semibold">— Carlos J.</div>
-              </div>
-              <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-2">
-                <div className="text-4xl text-primaria mb-4">“</div>
-                <p className="text-gray-700 mb-4">Os hambúrgueres são maravilhosos, e o preço justo. Recomendo!</p>
-                <div className="font-semibold">— Fernanda L.</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
+        
         {/* Contacto e localização */}
         <section className="py-16 bg-fundo">
           <div className="container-custom">
