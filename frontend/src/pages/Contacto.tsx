@@ -56,9 +56,9 @@ Enviado através do formulário de contacto.`;
       <div className="container-custom px-4 max-w-7xl mx-auto">
         {/* Cabeçalho */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-secundaria mb-4">📞 Fale Connosco</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-secundaria mb-4">Contacte-nos</h1>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Estamos ao seu dispor para esclarecer dúvidas, receber sugestões ou ouvir os seus elogios. 
+            Estamos disponiveis para esclarecer dúvidas e receber sugestões. 
             Preencha o formulário e será redirecionado ao nosso WhatsApp – respondemos rapidamente!
           </p>
         </div>
@@ -66,7 +66,7 @@ Enviado através do formulário de contacto.`;
         {/* Call to action para novos utilizadores */}
         {!isAuthenticated && (
           <div className="bg-gradient-to-r from-primaria/10 to-secundaria/10 rounded-2xl p-6 mb-12 text-center shadow-sm">
-            <h2 className="text-2xl font-bold text-secundaria mb-2">✨ Ainda não faz parte da nossa família?</h2>
+            <h2 className="text-2xl font-bold text-secundaria mb-2">Crie uma conta para fazer o seu pedido</h2>
             <p className="text-gray-700 mb-4">
               Crie uma conta gratuitamente e tenha acesso a <strong>pedidos online, reserva de mesas, histórico de pedidos, recibos digitais</strong> e muito mais!
             </p>

@@ -161,7 +161,7 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Origens do Sabor – Todos os direitos reservados.
           </p>
           <p className="text-center">
-            Desenvolvido com ❤️ em Chimoio
+            Desenvolvido com por <strong className="text-yellow">Jose Da Silva</strong> <a href="https://wa.me/258855712857" className="text-white hover:underline">+258 85 57 12 857</a>
           </p>
         </div>
       </div>
