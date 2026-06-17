@@ -5,9 +5,6 @@ import twilio from 'twilio';
 import nodemailer from 'nodemailer';
 import dns from 'dns';
 
-// 🔥 Forçar resolução de DNS para IPv4 primeiro (medida extra)
-dns.setDefaultResultOrder('ipv4first');
-
 const prisma = new PrismaClient();
 
 // ==================== Validações ====================
@@ -37,19 +34,47 @@ const twilioClient = (() => {
   return null;
 })();
 
-// ==================== Configuração do Nodemailer (porta 465 SSL) ====================
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: 465, // 🔥 Porta SSL do Gmail
-  secure: true, // 🔥 SSL direto
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  connectionTimeout: 15000,
-  greetingTimeout: 15000,
-  socketTimeout: 30000,
-} as any); // as any para evitar erro de tipo no 'lookup'
+// ==================== Configuração do Nodemailer com resolução IPv4 ====================
+let transporterPromise: Promise<any> | null = null;
+
+async function getTransporter(): Promise<any> {
+  if (transporterPromise) return transporterPromise;
+
+  transporterPromise = (async () => {
+    let host = process.env.EMAIL_HOST || 'smtp.gmail.com';
+    const port = Number(process.env.EMAIL_PORT) || 465;
+
+    // Se for Gmail, tentar resolver para IPv4 (evita ENETUNREACH)
+    if (host === 'smtp.gmail.com') {
+      try {
+        const addresses = await dns.promises.lookup(host, { family: 4 });
+        host = addresses.address;
+        console.log(`✅ Resolvido smtp.gmail.com para IPv4: ${host}`);
+      } catch (err) {
+        console.warn('⚠️ Falha ao resolver smtp.gmail.com, usando domínio:', err);
+        // mantém host como 'smtp.gmail.com'
+      }
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: host,
+      port: port,
+      secure: port === 465, // true para 465, false para 587
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000,
+    });
+
+    console.log(`📧 Transporter SMTP configurado com host: ${host}:${port}`);
+    return transporter;
+  })();
+
+  return transporterPromise;
+}
 
 // ==================== Funções auxiliares de envio ====================
 async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> {
@@ -69,11 +94,8 @@ async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> 
 }
 
 async function enviarEmail(destino: string, assunto: string, html: string): Promise<void> {
-  if (!transporter) {
-    console.warn('⚠️ Transporter não inicializado');
-    return;
-  }
   try {
+    const transporter = await getTransporter();
     console.log(`📧 [${new Date().toISOString()}] Tentando enviar e‑mail para ${destino}...`);
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM,
