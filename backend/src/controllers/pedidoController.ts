@@ -5,7 +5,7 @@ import twilio from 'twilio';
 import nodemailer from 'nodemailer';
 import dns from 'dns';
 
-// 🔥 Forçar resolução de DNS para IPv4 primeiro (resolvendo ENETUNREACH)
+// 🔥 Forçar resolução de DNS para IPv4 primeiro (medida extra)
 dns.setDefaultResultOrder('ipv4first');
 
 const prisma = new PrismaClient();
@@ -37,11 +37,11 @@ const twilioClient = (() => {
   return null;
 })();
 
-// ==================== Configuração do Nodemailer ====================
+// ==================== Configuração do Nodemailer (porta 465 SSL) ====================
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: Number(process.env.EMAIL_PORT) || 587,
-  secure: false,
+  port: 465, // 🔥 Porta SSL do Gmail
+  secure: true, // 🔥 SSL direto
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -49,7 +49,7 @@ const transporter = nodemailer.createTransport({
   connectionTimeout: 15000,
   greetingTimeout: 15000,
   socketTimeout: 30000,
-});
+} as any); // as any para evitar erro de tipo no 'lookup'
 
 // ==================== Funções auxiliares de envio ====================
 async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> {
