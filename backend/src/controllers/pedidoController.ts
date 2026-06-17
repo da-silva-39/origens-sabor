@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import twilio from 'twilio';
 import nodemailer from 'nodemailer';
+import dns from 'dns';
 
 const prisma = new PrismaClient();
 
@@ -13,7 +14,6 @@ function validarEmail(email: string): boolean {
 }
 
 function validarTelefoneMocambique(telefone: string): boolean {
-  // Aceita formatos: +25882XXXXXXX ou 82XXXXXXX
   const regexCompleto = /^\+258[8][2-7]\d{7}$/;
   const regexLocal = /^[8][2-7]\d{7}$/;
   return regexCompleto.test(telefone) || regexLocal.test(telefone);
@@ -34,16 +34,25 @@ const twilioClient = (() => {
   return null;
 })();
 
-// ==================== Configuração do Nodemailer ====================
+// ==================== Configuração do Nodemailer (com lookup para IPv4) ====================
+// A opção 'lookup' é suportada pelo Nodemailer, mas as definições de tipo não a incluem.
+// Usamos 'as any' para evitar erro de TypeScript.
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT),
+  port: Number(process.env.EMAIL_PORT) || 587,
   secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-});
+  // Força resolução de hostname para IPv4 apenas (evita ENETUNREACH com IPv6)
+  lookup: (hostname: string, options: any, callback: any) => {
+    dns.lookup(hostname, { family: 4 }, callback);
+  },
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 30000,
+} as any);
 
 // ==================== Funções auxiliares de envio ====================
 async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> {
@@ -56,7 +65,7 @@ async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> 
       from: `whatsapp:${from}`,
       to: `whatsapp:${destino}`,
     });
-    console.log(`📱 WhatsApp enviado para ${destino}`);
+    console.log(`✅ WhatsApp enviado para ${destino}`);
   } catch (error) {
     console.error(`❌ Erro WhatsApp ${destino}:`, error);
   }
@@ -87,9 +96,7 @@ export const listarPedidosCliente = async (req: Request, res: Response) => {
   try {
     const pedidos = await prisma.pedido.findMany({
       where: { clienteId: userId },
-      include: {
-        itens: true, // inclui os itens do pedido
-      },
+      include: { itens: true },
       orderBy: { dataPedido: 'desc' },
     });
     res.json(pedidos);
@@ -157,7 +164,6 @@ export const criarPedido = async (req: Request, res: Response) => {
       .join('');
 
     // ========== Notificações (em segundo plano, sem bloquear a resposta) ==========
-    // Iniciar as notificações sem aguardar, para que a resposta seja imediata
     const notificacoes = async () => {
       try {
         const adminWhats = process.env.NOTIFICATION_WHATSAPP_TO;
@@ -236,16 +242,13 @@ export const criarPedido = async (req: Request, res: Response) => {
           promises.push(enviarEmail(clienteEmail, `Confirmação do Pedido #${pedido.id}`, emailClienteHtml));
         }
 
-        // Aguarda todas as notificações, mas não interrompe se alguma falhar
         await Promise.allSettled(promises);
         console.log(`✅ Notificações do pedido #${pedido.id} processadas em segundo plano.`);
       } catch (err) {
-        // Qualquer erro aqui é capturado e apenas registado
         console.error(`❌ Erro ao processar notificações do pedido #${pedido.id}:`, err);
       }
     };
 
-    // Inicia as notificações em segundo plano (não aguarda)
     notificacoes();
 
     // ========== Resposta imediata ao cliente ==========
