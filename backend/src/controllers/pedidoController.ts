@@ -5,6 +5,9 @@ import twilio from 'twilio';
 import nodemailer from 'nodemailer';
 import dns from 'dns';
 
+// 🔥 Forçar resolução de DNS para IPv4 primeiro (resolvendo ENETUNREACH)
+dns.setDefaultResultOrder('ipv4first');
+
 const prisma = new PrismaClient();
 
 // ==================== Validações ====================
@@ -34,25 +37,19 @@ const twilioClient = (() => {
   return null;
 })();
 
-// ==================== Configuração do Nodemailer (com lookup para IPv4) ====================
-// A opção 'lookup' é suportada pelo Nodemailer, mas as definições de tipo não a incluem.
-// Usamos 'as any' para evitar erro de TypeScript.
+// ==================== Configuração do Nodemailer ====================
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: Number(process.env.EMAIL_PORT) || 587,
   secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  // Força resolução de hostname para IPv4 apenas (evita ENETUNREACH com IPv6)
-  lookup: (hostname: string, options: any, callback: any) => {
-    dns.lookup(hostname, { family: 4 }, callback);
-  },
   connectionTimeout: 15000,
   greetingTimeout: 15000,
   socketTimeout: 30000,
-} as any);
+});
 
 // ==================== Funções auxiliares de envio ====================
 async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> {
@@ -111,7 +108,7 @@ export const criarPedido = async (req: Request, res: Response) => {
   const user = (req as any).user;
   const { clienteNome, clienteEmail, telefone, endereco, bairro, subtotal, frete, total, itens, tempoEntrega } = req.body;
 
-  // ========== Validações fortes ==========
+  // ========== Validações ==========
   if (!clienteNome || !clienteEmail || !telefone || !endereco || !bairro || !itens || itens.length === 0) {
     return res.status(400).json({ error: 'Dados incompletos' });
   }
@@ -163,15 +160,14 @@ export const criarPedido = async (req: Request, res: Response) => {
       )
       .join('');
 
-    // ========== Notificações (em segundo plano, sem bloquear a resposta) ==========
+    // ========== Notificações em segundo plano ==========
     const notificacoes = async () => {
       try {
         const adminWhats = process.env.NOTIFICATION_WHATSAPP_TO;
         const adminEmail = process.env.NOTIFICATION_EMAIL_TO;
-
         const promises = [];
 
-        // --- ADMIN WhatsApp ---
+        // ADMIN WhatsApp
         if (adminWhats) {
           const msgAdmin = `🍽️ *NOVO PEDIDO #${pedido.id}*\n\n` +
             `*Cliente:* ${clienteNome}\n` +
@@ -188,7 +184,7 @@ export const criarPedido = async (req: Request, res: Response) => {
           promises.push(enviarWhatsApp(adminWhats, msgAdmin));
         }
 
-        // --- ADMIN E‑mail ---
+        // ADMIN E‑mail
         if (adminEmail) {
           const emailAdminHtml = `
             <h2>🍽️ Novo Pedido #${pedido.id}</h2>
@@ -211,7 +207,7 @@ export const criarPedido = async (req: Request, res: Response) => {
           promises.push(enviarEmail(adminEmail, `Novo Pedido #${pedido.id}`, emailAdminHtml));
         }
 
-        // --- CLIENTE WhatsApp ---
+        // CLIENTE WhatsApp
         if (telefoneFormatado) {
           const msgCliente = `✅ *Pedido #${pedido.id} confirmado!*\n\n` +
             `Olá ${clienteNome}, recebemos o seu pedido e estamos a prepará‑lo.\n\n` +
@@ -222,7 +218,7 @@ export const criarPedido = async (req: Request, res: Response) => {
           promises.push(enviarWhatsApp(telefoneFormatado, msgCliente));
         }
 
-        // --- CLIENTE E‑mail ---
+        // CLIENTE E‑mail
         if (clienteEmail) {
           const emailClienteHtml = `
             <h2>✅ Pedido #${pedido.id} confirmado!</h2>
@@ -251,7 +247,6 @@ export const criarPedido = async (req: Request, res: Response) => {
 
     notificacoes();
 
-    // ========== Resposta imediata ao cliente ==========
     res.status(201).json(pedido);
   } catch (error) {
     console.error('Erro ao criar pedido:', error);
