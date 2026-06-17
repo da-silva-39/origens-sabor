@@ -136,7 +136,7 @@ export const criarPedido = async (req: Request, res: Response) => {
       include: { itens: true },
     });
 
-    // Dados comuns para mensagens
+    // ========== Preparar conteúdo das notificações ==========
     const itensResumo = pedido.itens
       .map(i => `• ${i.quantidade}x ${i.produtoNome} – ${(i.quantidade * i.precoUnitario).toFixed(2)} MT`)
       .join('\n');
@@ -152,79 +152,99 @@ export const criarPedido = async (req: Request, res: Response) => {
       )
       .join('');
 
-    // --- Notificação ADMIN (WhatsApp) ---
-    const adminWhats = process.env.NOTIFICATION_WHATSAPP_TO;
-    if (adminWhats) {
-      const msgAdmin = `🍽️ *NOVO PEDIDO #${pedido.id}*\n\n` +
-        `*Cliente:* ${clienteNome}\n` +
-        `*Telefone:* ${telefoneFormatado}\n` +
-        `*E‑mail:* ${clienteEmail}\n` +
-        `*Endereço:* ${endereco}\n` +
-        `*Bairro:* ${bairro}\n\n` +
-        `*Itens:*\n${itensResumo}\n\n` +
-        `*Subtotal:* ${subtotal.toFixed(2)} MT\n` +
-        `*Frete:* ${frete.toFixed(2)} MT\n` +
-        `*Total:* ${total.toFixed(2)} MT\n\n` +
-        `*Status:* ${pedido.status}\n` +
-        `*Data/Hora:* ${dataHora}`;
-      await enviarWhatsApp(adminWhats, msgAdmin);
-    }
+    // ========== Notificações (em segundo plano, sem bloquear a resposta) ==========
+    // Iniciar as notificações sem aguardar, para que a resposta seja imediata
+    const notificacoes = async () => {
+      try {
+        const adminWhats = process.env.NOTIFICATION_WHATSAPP_TO;
+        const adminEmail = process.env.NOTIFICATION_EMAIL_TO;
 
-    // --- Notificação ADMIN (E‑mail) ---
-    const adminEmail = process.env.NOTIFICATION_EMAIL_TO;
-    if (adminEmail) {
-      const emailAdminHtml = `
-        <h2>🍽️ Novo Pedido #${pedido.id}</h2>
-        <p><strong>Cliente:</strong> ${clienteNome}</p>
-        <p><strong>Telefone:</strong> ${telefoneFormatado}</p>
-        <p><strong>E‑mail:</strong> ${clienteEmail}</p>
-        <p><strong>Endereço:</strong> ${endereco}</p>
-        <p><strong>Bairro:</strong> ${bairro}</p>
-        <h3>Itens:</h3>
-        <table style="border-collapse: collapse; width: 100%;">
-          <thead><tr style="background:#f2f2f2;"><th>Produto</th><th>Subtotal</th></tr></thead>
-          <tbody>${itensHtml}</tbody>
-        </table>
-        <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)} MT</p>
-        <p><strong>Frete:</strong> ${frete.toFixed(2)} MT</p>
-        <p><strong>Total:</strong> ${total.toFixed(2)} MT</p>
-        <p><strong>Status:</strong> ${pedido.status}</p>
-        <p><strong>Data/Hora:</strong> ${dataHora}</p>
-      `;
-      await enviarEmail(adminEmail, `Novo Pedido #${pedido.id}`, emailAdminHtml);
-    }
+        const promises = [];
 
-    // --- Notificação CLIENTE (WhatsApp) ---
-    if (telefoneFormatado) {
-      const msgCliente = `✅ *Pedido #${pedido.id} confirmado!*\n\n` +
-        `Olá ${clienteNome}, recebemos o seu pedido e estamos a prepará‑lo.\n\n` +
-        `*Itens:*\n${itensResumo}\n\n` +
-        `*Total:* ${total.toFixed(2)} MT\n` +
-        `*Tempo estimado:* ${tempoEntrega || 'a definir'}\n\n` +
-        `Obrigado por escolher o Origens do Sabor! 🍽️`;
-      await enviarWhatsApp(telefoneFormatado, msgCliente);
-    }
+        // --- ADMIN WhatsApp ---
+        if (adminWhats) {
+          const msgAdmin = `🍽️ *NOVO PEDIDO #${pedido.id}*\n\n` +
+            `*Cliente:* ${clienteNome}\n` +
+            `*Telefone:* ${telefoneFormatado}\n` +
+            `*E‑mail:* ${clienteEmail}\n` +
+            `*Endereço:* ${endereco}\n` +
+            `*Bairro:* ${bairro}\n\n` +
+            `*Itens:*\n${itensResumo}\n\n` +
+            `*Subtotal:* ${subtotal.toFixed(2)} MT\n` +
+            `*Frete:* ${frete.toFixed(2)} MT\n` +
+            `*Total:* ${total.toFixed(2)} MT\n\n` +
+            `*Status:* ${pedido.status}\n` +
+            `*Data/Hora:* ${dataHora}`;
+          promises.push(enviarWhatsApp(adminWhats, msgAdmin));
+        }
 
-    // --- Notificação CLIENTE (E‑mail) ---
-    if (clienteEmail) {
-      const emailClienteHtml = `
-        <h2>✅ Pedido #${pedido.id} confirmado!</h2>
-        <p>Olá <strong>${clienteNome}</strong>,</p>
-        <p>Recebemos o seu pedido e estamos a prepará‑lo com todo o carinho.</p>
-        <h3>Resumo:</h3>
-        <table style="border-collapse: collapse; width: 100%;">
-          <thead><tr style="background:#f2f2f2;"><th>Produto</th><th>Subtotal</th></tr></thead>
-          <tbody>${itensHtml}</tbody>
-        </table>
-        <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)} MT</p>
-        <p><strong>Frete:</strong> ${frete.toFixed(2)} MT</p>
-        <p><strong>Total:</strong> ${total.toFixed(2)} MT</p>
-        <p><strong>Tempo estimado:</strong> ${tempoEntrega || 'a definir'}</p>
-        <p>Obrigado pela preferência! 🍽️</p>
-      `;
-      await enviarEmail(clienteEmail, `Confirmação do Pedido #${pedido.id}`, emailClienteHtml);
-    }
+        // --- ADMIN E‑mail ---
+        if (adminEmail) {
+          const emailAdminHtml = `
+            <h2>🍽️ Novo Pedido #${pedido.id}</h2>
+            <p><strong>Cliente:</strong> ${clienteNome}</p>
+            <p><strong>Telefone:</strong> ${telefoneFormatado}</p>
+            <p><strong>E‑mail:</strong> ${clienteEmail}</p>
+            <p><strong>Endereço:</strong> ${endereco}</p>
+            <p><strong>Bairro:</strong> ${bairro}</p>
+            <h3>Itens:</h3>
+            <table style="border-collapse: collapse; width: 100%;">
+              <thead><tr style="background:#f2f2f2;"><th>Produto</th><th>Subtotal</th></tr></thead>
+              <tbody>${itensHtml}</tbody>
+            </table>
+            <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)} MT</p>
+            <p><strong>Frete:</strong> ${frete.toFixed(2)} MT</p>
+            <p><strong>Total:</strong> ${total.toFixed(2)} MT</p>
+            <p><strong>Status:</strong> ${pedido.status}</p>
+            <p><strong>Data/Hora:</strong> ${dataHora}</p>
+          `;
+          promises.push(enviarEmail(adminEmail, `Novo Pedido #${pedido.id}`, emailAdminHtml));
+        }
 
+        // --- CLIENTE WhatsApp ---
+        if (telefoneFormatado) {
+          const msgCliente = `✅ *Pedido #${pedido.id} confirmado!*\n\n` +
+            `Olá ${clienteNome}, recebemos o seu pedido e estamos a prepará‑lo.\n\n` +
+            `*Itens:*\n${itensResumo}\n\n` +
+            `*Total:* ${total.toFixed(2)} MT\n` +
+            `*Tempo estimado:* ${tempoEntrega || 'a definir'}\n\n` +
+            `Obrigado por escolher o Origens do Sabor! 🍽️`;
+          promises.push(enviarWhatsApp(telefoneFormatado, msgCliente));
+        }
+
+        // --- CLIENTE E‑mail ---
+        if (clienteEmail) {
+          const emailClienteHtml = `
+            <h2>✅ Pedido #${pedido.id} confirmado!</h2>
+            <p>Olá <strong>${clienteNome}</strong>,</p>
+            <p>Recebemos o seu pedido e estamos a prepará‑lo com todo o carinho.</p>
+            <h3>Resumo:</h3>
+            <table style="border-collapse: collapse; width: 100%;">
+              <thead><tr style="background:#f2f2f2;"><th>Produto</th><th>Subtotal</th></tr></thead>
+              <tbody>${itensHtml}</tbody>
+            </table>
+            <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)} MT</p>
+            <p><strong>Frete:</strong> ${frete.toFixed(2)} MT</p>
+            <p><strong>Total:</strong> ${total.toFixed(2)} MT</p>
+            <p><strong>Tempo estimado:</strong> ${tempoEntrega || 'a definir'}</p>
+            <p>Obrigado pela preferência! 🍽️</p>
+          `;
+          promises.push(enviarEmail(clienteEmail, `Confirmação do Pedido #${pedido.id}`, emailClienteHtml));
+        }
+
+        // Aguarda todas as notificações, mas não interrompe se alguma falhar
+        await Promise.allSettled(promises);
+        console.log(`✅ Notificações do pedido #${pedido.id} processadas em segundo plano.`);
+      } catch (err) {
+        // Qualquer erro aqui é capturado e apenas registado
+        console.error(`❌ Erro ao processar notificações do pedido #${pedido.id}:`, err);
+      }
+    };
+
+    // Inicia as notificações em segundo plano (não aguarda)
+    notificacoes();
+
+    // ========== Resposta imediata ao cliente ==========
     res.status(201).json(pedido);
   } catch (error) {
     console.error('Erro ao criar pedido:', error);
