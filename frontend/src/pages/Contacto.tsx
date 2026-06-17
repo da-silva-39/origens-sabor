@@ -116,7 +116,7 @@ Enviado através do formulário de contacto.`;
                 <div className="flex items-start gap-4">
                   <FiPhone className="text-primaria text-xl mt-1" />
                   <div>
-                    <p className="font-medium text-gray-800">Telefone / WhatsApp</p>
+                    <p className="font-medium text-gray-800">Telefone(84) / WhatsApp(86)</p>
                     <p className="text-gray-600">+258 84 842 4621</p>
                     <p className="text-gray-600">+258 86 015 1122</p>
                   </div>
@@ -264,13 +264,13 @@ Enviado através do formulário de contacto.`;
                       to="/login"
                       className="flex items-center gap-2 text-sm bg-primaria/10 text-primaria px-3 py-2 rounded-xl hover:bg-primaria/20 transition"
                     >
-                      🔐 Entrar
+                      Entrar
                     </Link>
                     <Link
                       to="/registro"
                       className="flex items-center gap-2 text-sm bg-primaria/10 text-primaria px-3 py-2 rounded-xl hover:bg-primaria/20 transition"
                     >
-                      ✨ Criar Conta
+                     Criar Conta
                     </Link>
                   </>
                 ) : (
