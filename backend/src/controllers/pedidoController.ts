@@ -63,17 +63,21 @@ async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> 
 }
 
 async function enviarEmail(destino: string, assunto: string, html: string): Promise<void> {
-  if (!transporter) return;
+  if (!transporter) {
+    console.warn('⚠️ Transporter não inicializado');
+    return;
+  }
   try {
-    await transporter.sendMail({
+    console.log(`📧 [${new Date().toISOString()}] Tentando enviar e‑mail para ${destino}...`);
+    const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to: destino,
       subject: assunto,
       html,
     });
-    console.log(`📧 E‑mail enviado para ${destino}`);
+    console.log(`✅ E‑mail enviado para ${destino} (ID: ${info.messageId})`);
   } catch (error) {
-    console.error(`❌ Erro e‑mail ${destino}:`, error);
+    console.error(`❌ Erro ao enviar e‑mail para ${destino}:`, error);
   }
 }
 
