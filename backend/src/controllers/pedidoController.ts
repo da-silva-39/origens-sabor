@@ -2,8 +2,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import twilio from 'twilio';
-import nodemailer from 'nodemailer';
-import dns from 'dns';
+import sgMail from '@sendgrid/mail';
 
 const prisma = new PrismaClient();
 
@@ -34,49 +33,18 @@ const twilioClient = (() => {
   return null;
 })();
 
-// ==================== Configuração do Nodemailer com resolução IPv4 ====================
-let transporterPromise: Promise<any> | null = null;
-
-async function getTransporter(): Promise<any> {
-  if (transporterPromise) return transporterPromise;
-
-  transporterPromise = (async () => {
-    let host = process.env.EMAIL_HOST || 'smtp.gmail.com';
-    const port = Number(process.env.EMAIL_PORT) || 465;
-
-    // Se for Gmail, tentar resolver para IPv4 (evita ENETUNREACH)
-    if (host === 'smtp.gmail.com') {
-      try {
-        const addresses = await dns.promises.lookup(host, { family: 4 });
-        host = addresses.address;
-        console.log(`✅ Resolvido smtp.gmail.com para IPv4: ${host}`);
-      } catch (err) {
-        console.warn('⚠️ Falha ao resolver smtp.gmail.com, usando domínio:', err);
-        // mantém host como 'smtp.gmail.com'
-      }
-    }
-
-    const transporter = nodemailer.createTransport({
-      host: host,
-      port: port,
-      secure: port === 465, // true para 465, false para 587
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 30000,
-    });
-
-    console.log(`📧 Transporter SMTP configurado com host: ${host}:${port}`);
-    return transporter;
-  })();
-
-  return transporterPromise;
+// ==================== Configuração do SendGrid ====================
+const sendgridApiKey = process.env.SENDGRID_API_KEY;
+if (sendgridApiKey) {
+  sgMail.setApiKey(sendgridApiKey);
+  console.log('✅ SendGrid configurado');
+} else {
+  console.warn('⚠️ SENDGRID_API_KEY não definida');
 }
 
-// ==================== Funções auxiliares de envio ====================
+const fromEmail = process.env.EMAIL_FROM || 'origensdosabor@gmail.com';
+
+// ==================== Funções auxiliares ====================
 async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> {
   if (!twilioClient) return;
   const from = process.env.TWILIO_WHATSAPP_NUMBER;
@@ -94,18 +62,21 @@ async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> 
 }
 
 async function enviarEmail(destino: string, assunto: string, html: string): Promise<void> {
+  if (!sendgridApiKey) {
+    console.warn('⚠️ SendGrid não configurado. E‑mail ignorado.');
+    return;
+  }
+
   try {
-    const transporter = await getTransporter();
-    console.log(`📧 [${new Date().toISOString()}] Tentando enviar e‑mail para ${destino}...`);
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
+    await sgMail.send({
       to: destino,
+      from: fromEmail,
       subject: assunto,
       html,
     });
-    console.log(`✅ E‑mail enviado para ${destino} (ID: ${info.messageId})`);
-  } catch (error) {
-    console.error(`❌ Erro ao enviar e‑mail para ${destino}:`, error);
+    console.log(`✅ E‑mail enviado para ${destino} via SendGrid`);
+  } catch (error: any) {
+    console.error(`❌ Erro ao enviar e‑mail para ${destino} via SendGrid:`, error.response?.body || error.message);
   }
 }
 
@@ -130,7 +101,6 @@ export const criarPedido = async (req: Request, res: Response) => {
   const user = (req as any).user;
   const { clienteNome, clienteEmail, telefone, endereco, bairro, subtotal, frete, total, itens, tempoEntrega } = req.body;
 
-  // ========== Validações ==========
   if (!clienteNome || !clienteEmail || !telefone || !endereco || !bairro || !itens || itens.length === 0) {
     return res.status(400).json({ error: 'Dados incompletos' });
   }
