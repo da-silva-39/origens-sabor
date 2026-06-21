@@ -2,7 +2,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import twilio from 'twilio';
-import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
 
 const prisma = new PrismaClient();
 
@@ -33,16 +33,18 @@ const twilioClient = (() => {
   return null;
 })();
 
-// ==================== Configuração do SendGrid ====================
-const sendgridApiKey = process.env.SENDGRID_API_KEY;
-if (sendgridApiKey) {
-  sgMail.setApiKey(sendgridApiKey);
-  console.log('✅ SendGrid configurado');
+// ==================== Configuração do Resend ====================
+const resendApiKey = process.env.RESEND_API_KEY;
+let resend: Resend | null = null;
+if (resendApiKey) {
+  resend = new Resend(resendApiKey);
+  console.log('✅ Resend configurado');
 } else {
-  console.warn('⚠️ SENDGRID_API_KEY não definida');
+  console.warn('⚠️ RESEND_API_KEY não definida');
 }
 
-const fromEmail = process.env.EMAIL_FROM || 'origensdosabor@gmail.com';
+// O domínio sandbox do Resend (já verificado e com boa reputação)
+const fromEmail = 'Origens do Sabor <onboarding@resend.dev>';
 
 // ==================== Funções auxiliares ====================
 async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> {
@@ -62,21 +64,26 @@ async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> 
 }
 
 async function enviarEmail(destino: string, assunto: string, html: string): Promise<void> {
-  if (!sendgridApiKey) {
-    console.warn('⚠️ SendGrid não configurado. E‑mail ignorado.');
+  if (!resend) {
+    console.warn('⚠️ Resend não configurado. E‑mail ignorado.');
     return;
   }
 
   try {
-    await sgMail.send({
-      to: destino,
+    const { data, error } = await resend.emails.send({
       from: fromEmail,
+      to: [destino],
       subject: assunto,
-      html,
+      html: html,
     });
-    console.log(`✅ E‑mail enviado para ${destino} via SendGrid`);
-  } catch (error: any) {
-    console.error(`❌ Erro ao enviar e‑mail para ${destino} via SendGrid:`, error.response?.body || error.message);
+
+    if (error) {
+      console.error(`❌ Erro Resend para ${destino}:`, error);
+    } else {
+      console.log(`✅ E‑mail enviado para ${destino} via Resend (ID: ${data?.id})`);
+    }
+  } catch (error) {
+    console.error(`❌ Erro ao enviar e‑mail para ${destino}:`, error);
   }
 }
 
