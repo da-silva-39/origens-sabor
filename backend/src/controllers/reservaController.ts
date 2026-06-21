@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { randomBytes } from 'crypto';
-import { sendReservaWhatsApp } from '../services/whatsappService';
 
 const prisma = new PrismaClient();
 
@@ -9,7 +8,33 @@ function gerarCodigoRecibo(): string {
   return randomBytes(8).toString('hex').toUpperCase();
 }
 
-// Criar reserva (cliente)
+// ==================== Função WhatsApp (local) ====================
+import twilio from 'twilio';
+const twilioClient = (() => {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  if (sid && token) return twilio(sid, token);
+  console.warn('Twilio não configurado');
+  return null;
+})();
+
+async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> {
+  if (!twilioClient) return;
+  const from = process.env.TWILIO_WHATSAPP_NUMBER;
+  if (!from || !destino) return;
+  try {
+    await twilioClient.messages.create({
+      body: mensagem,
+      from: `whatsapp:${from}`,
+      to: `whatsapp:${destino}`,
+    });
+    console.log(`WhatsApp enviado para ${destino}`);
+  } catch (error) {
+    console.error(`Erro WhatsApp ${destino}:`, error);
+  }
+}
+
+// ==================== CRIAR RESERVA ====================
 export const criarReserva = async (req: Request, res: Response) => {
   const user = (req as any).user;
   const userId = user.id;
@@ -54,17 +79,42 @@ export const criarReserva = async (req: Request, res: Response) => {
       include: { cliente: { select: { nome: true, email: true, telefone: true } }, mesa: true },
     });
 
-    await sendReservaWhatsApp({
-      id: reserva.id,
-      clienteNome: user.nome,
-      clienteEmail: user.email,
-      clienteTelefone: user.telefone,
-      mesaNumero: mesa.numero,
-      dataHora: dataHoraObj,
-      quantidadePessoas,
-      observacoes,
-      status: reserva.status,
-    }).catch(err => console.error('Erro ao enviar notificação WhatsApp:', err));
+    // Notificações WhatsApp
+    const adminWhats = process.env.NOTIFICATION_WHATSAPP_TO;
+    const frontendUrl = process.env.FRONTEND_URL || 'https://origens-sabor.vercel.app';
+
+    // Mensagem para o administrador (detalhada)
+    if (adminWhats) {
+      const msgAdmin = 
+`Nova Reserva #${reserva.id}
+
+Cliente: ${user.nome}
+E-mail: ${user.email}
+Telefone: ${user.telefone || 'não informado'}
+Mesa: ${mesa.numero}
+Data/Hora: ${new Date(dataHoraObj).toLocaleString('pt-PT')}
+Pessoas: ${quantidadePessoas}
+Observações: ${observacoes || 'nenhuma'}
+Status: ${reserva.status}
+
+Gerir reserva: ${frontendUrl}/admin/reservas`;
+      await enviarWhatsApp(adminWhats, msgAdmin);
+    }
+
+    // Mensagem para o cliente (resumida)
+    if (user.telefone) {
+      const msgCliente = 
+`Reserva #${reserva.id} solicitada
+
+Olá ${user.nome}, a sua reserva para a mesa ${mesa.numero} foi recebida.
+
+Data: ${new Date(dataHoraObj).toLocaleString('pt-PT')}
+Pessoas: ${quantidadePessoas}
+Status: Pendente (aguarde confirmação)
+
+Obrigado por escolher o Origens do Sabor.`;
+      await enviarWhatsApp(user.telefone, msgCliente);
+    }
 
     res.status(201).json(reserva);
   } catch (error) {
@@ -73,7 +123,7 @@ export const criarReserva = async (req: Request, res: Response) => {
   }
 };
 
-// Listar reservas do cliente (inclui dados do cliente e da mesa)
+// ==================== LISTAR MINHAS RESERVAS ====================
 export const minhasReservas = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   try {
@@ -81,7 +131,7 @@ export const minhasReservas = async (req: Request, res: Response) => {
       where: { clienteId: userId },
       include: {
         cliente: { select: { nome: true, email: true, telefone: true } },
-        mesa: true, // inclui todos os campos da mesa, incluindo numero
+        mesa: true,
       },
       orderBy: { dataHora: 'asc' },
     });
@@ -92,7 +142,7 @@ export const minhasReservas = async (req: Request, res: Response) => {
   }
 };
 
-// Cancelar reserva (cliente)
+// ==================== CANCELAR RESERVA (CLIENTE) ====================
 export const cancelarReserva = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const { id } = req.params;
@@ -118,7 +168,7 @@ export const cancelarReserva = async (req: Request, res: Response) => {
   }
 };
 
-// ADMIN: listar todas reservas
+// ==================== ADMIN: LISTAR TODAS ====================
 export const listarTodasReservas = async (req: Request, res: Response) => {
   try {
     const reservas = await prisma.reserva.findMany({
@@ -132,7 +182,7 @@ export const listarTodasReservas = async (req: Request, res: Response) => {
   }
 };
 
-// ADMIN: confirmar reserva
+// ==================== ADMIN: CONFIRMAR RESERVA ====================
 export const confirmarReserva = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
@@ -141,6 +191,22 @@ export const confirmarReserva = async (req: Request, res: Response) => {
       data: { status: 'CONFIRMADA' },
       include: { cliente: { select: { nome: true, email: true, telefone: true } }, mesa: true },
     });
+
+    // Notificar o cliente por WhatsApp (confirmar a reserva)
+    if (reserva.cliente.telefone) {
+      const msgCliente = 
+`Reserva #${reserva.id} confirmada
+
+Olá ${reserva.cliente.nome}, a sua reserva para a mesa ${reserva.mesa.numero} foi confirmada.
+
+Data: ${new Date(reserva.dataHora).toLocaleString('pt-PT')}
+Pessoas: ${reserva.quantidadePessoas}
+
+Apresente-se no restaurante no horário agendado.
+Obrigado por escolher o Origens do Sabor.`;
+      await enviarWhatsApp(reserva.cliente.telefone, msgCliente);
+    }
+
     res.json(reserva);
   } catch (error) {
     console.error(error);
@@ -148,7 +214,7 @@ export const confirmarReserva = async (req: Request, res: Response) => {
   }
 };
 
-// ADMIN: cancelar reserva
+// ==================== ADMIN: CANCELAR RESERVA ====================
 export const adminCancelarReserva = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
@@ -163,7 +229,7 @@ export const adminCancelarReserva = async (req: Request, res: Response) => {
   }
 };
 
-// Obter reserva (para gerar PDF)
+// ==================== OBTER RESERVA (PDF) ====================
 export const obterReserva = async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = (req as any).user.id;
@@ -182,7 +248,7 @@ export const obterReserva = async (req: Request, res: Response) => {
   }
 };
 
-// Validar reserva via QR code (público)
+// ==================== VALIDAR QR CODE ====================
 export const validarReservaQR = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { codigo } = req.query;
@@ -227,7 +293,7 @@ export const validarReservaQR = async (req: Request, res: Response) => {
   }
 };
 
-// Verificar disponibilidade da mesa para uma data/hora específica
+// ==================== VERIFICAR DISPONIBILIDADE ====================
 export const verificarDisponibilidade = async (req: Request, res: Response) => {
   const { mesaId, dataHora } = req.query;
 

@@ -2,7 +2,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import twilio from 'twilio';
-import { Resend } from 'resend';
 
 const prisma = new PrismaClient();
 
@@ -29,24 +28,11 @@ const twilioClient = (() => {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   if (sid && token) return twilio(sid, token);
-  console.warn('⚠️ Twilio não configurado');
+  console.warn('Twilio não configurado');
   return null;
 })();
 
-// ==================== Configuração do Resend ====================
-const resendApiKey = process.env.RESEND_API_KEY;
-let resend: Resend | null = null;
-if (resendApiKey) {
-  resend = new Resend(resendApiKey);
-  console.log('✅ Resend configurado');
-} else {
-  console.warn('⚠️ RESEND_API_KEY não definida');
-}
-
-// O domínio sandbox do Resend (já verificado e com boa reputação)
-const fromEmail = 'Origens do Sabor <onboarding@resend.dev>';
-
-// ==================== Funções auxiliares ====================
+// ==================== Função WhatsApp ====================
 async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> {
   if (!twilioClient) return;
   const from = process.env.TWILIO_WHATSAPP_NUMBER;
@@ -57,33 +43,9 @@ async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> 
       from: `whatsapp:${from}`,
       to: `whatsapp:${destino}`,
     });
-    console.log(`✅ WhatsApp enviado para ${destino}`);
+    console.log(`WhatsApp enviado para ${destino}`);
   } catch (error) {
-    console.error(`❌ Erro WhatsApp ${destino}:`, error);
-  }
-}
-
-async function enviarEmail(destino: string, assunto: string, html: string): Promise<void> {
-  if (!resend) {
-    console.warn('⚠️ Resend não configurado. E‑mail ignorado.');
-    return;
-  }
-
-  try {
-    const { data, error } = await resend.emails.send({
-      from: fromEmail,
-      to: [destino],
-      subject: assunto,
-      html: html,
-    });
-
-    if (error) {
-      console.error(`❌ Erro Resend para ${destino}:`, error);
-    } else {
-      console.log(`✅ E‑mail enviado para ${destino} via Resend (ID: ${data?.id})`);
-    }
-  } catch (error) {
-    console.error(`❌ Erro ao enviar e‑mail para ${destino}:`, error);
+    console.error(`Erro WhatsApp ${destino}:`, error);
   }
 }
 
@@ -112,7 +74,7 @@ export const criarPedido = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Dados incompletos' });
   }
   if (!validarEmail(clienteEmail)) {
-    return res.status(400).json({ error: 'E‑mail inválido' });
+    return res.status(400).json({ error: 'E-mail inválido' });
   }
   const telefoneValido = validarTelefoneMocambique(telefone);
   if (!telefoneValido) {
@@ -143,104 +105,62 @@ export const criarPedido = async (req: Request, res: Response) => {
       include: { itens: true },
     });
 
-    // ========== Preparar conteúdo das notificações ==========
+    // Preparar conteúdo das notificações
     const itensResumo = pedido.itens
-      .map(i => `• ${i.quantidade}x ${i.produtoNome} – ${(i.quantidade * i.precoUnitario).toFixed(2)} MT`)
+      .map(i => `${i.quantidade}x ${i.produtoNome} – ${(i.quantidade * i.precoUnitario).toFixed(2)} MT`)
       .join('\n');
     const dataHora = new Date().toLocaleString('pt-PT');
-    const itensHtml = pedido.itens
-      .map(
-        i => `
-          <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${i.quantidade}x ${i.produtoNome}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${(i.quantidade * i.precoUnitario).toFixed(2)} MT</td>
-          </tr>
-        `
-      )
-      .join('');
 
-    // ========== Notificações em segundo plano ==========
+    // Notificações WhatsApp em segundo plano
     const notificacoes = async () => {
       try {
         const adminWhats = process.env.NOTIFICATION_WHATSAPP_TO;
-        const adminEmail = process.env.NOTIFICATION_EMAIL_TO;
         const promises = [];
 
-        // ADMIN WhatsApp
+        // Mensagem para o administrador (detalhada)
         if (adminWhats) {
-          const msgAdmin = `🍽️ *NOVO PEDIDO #${pedido.id}*\n\n` +
-            `*Cliente:* ${clienteNome}\n` +
-            `*Telefone:* ${telefoneFormatado}\n` +
-            `*E‑mail:* ${clienteEmail}\n` +
-            `*Endereço:* ${endereco}\n` +
-            `*Bairro:* ${bairro}\n\n` +
-            `*Itens:*\n${itensResumo}\n\n` +
-            `*Subtotal:* ${subtotal.toFixed(2)} MT\n` +
-            `*Frete:* ${frete.toFixed(2)} MT\n` +
-            `*Total:* ${total.toFixed(2)} MT\n\n` +
-            `*Status:* ${pedido.status}\n` +
-            `*Data/Hora:* ${dataHora}`;
+          const msgAdmin = 
+`Novo Pedido #${pedido.id}
+
+Cliente: ${clienteNome}
+Telefone: ${telefoneFormatado}
+E-mail: ${clienteEmail}
+Endereço: ${endereco}
+Bairro: ${bairro}
+
+Itens:
+${itensResumo}
+
+Subtotal: ${subtotal.toFixed(2)} MT
+Frete: ${frete.toFixed(2)} MT
+Total: ${total.toFixed(2)} MT
+
+Status: ${pedido.status}
+Data/Hora: ${dataHora}`;
           promises.push(enviarWhatsApp(adminWhats, msgAdmin));
         }
 
-        // ADMIN E‑mail
-        if (adminEmail) {
-          const emailAdminHtml = `
-            <h2>🍽️ Novo Pedido #${pedido.id}</h2>
-            <p><strong>Cliente:</strong> ${clienteNome}</p>
-            <p><strong>Telefone:</strong> ${telefoneFormatado}</p>
-            <p><strong>E‑mail:</strong> ${clienteEmail}</p>
-            <p><strong>Endereço:</strong> ${endereco}</p>
-            <p><strong>Bairro:</strong> ${bairro}</p>
-            <h3>Itens:</h3>
-            <table style="border-collapse: collapse; width: 100%;">
-              <thead><tr style="background:#f2f2f2;"><th>Produto</th><th>Subtotal</th></tr></thead>
-              <tbody>${itensHtml}</tbody>
-            </table>
-            <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)} MT</p>
-            <p><strong>Frete:</strong> ${frete.toFixed(2)} MT</p>
-            <p><strong>Total:</strong> ${total.toFixed(2)} MT</p>
-            <p><strong>Status:</strong> ${pedido.status}</p>
-            <p><strong>Data/Hora:</strong> ${dataHora}</p>
-          `;
-          promises.push(enviarEmail(adminEmail, `Novo Pedido #${pedido.id}`, emailAdminHtml));
-        }
-
-        // CLIENTE WhatsApp
+        // Mensagem para o cliente (resumida, sem emojis)
         if (telefoneFormatado) {
-          const msgCliente = `✅ *Pedido #${pedido.id} confirmado!*\n\n` +
-            `Olá ${clienteNome}, recebemos o seu pedido e estamos a prepará‑lo.\n\n` +
-            `*Itens:*\n${itensResumo}\n\n` +
-            `*Total:* ${total.toFixed(2)} MT\n` +
-            `*Tempo estimado:* ${tempoEntrega || 'a definir'}\n\n` +
-            `Obrigado por escolher o Origens do Sabor! 🍽️`;
+          const msgCliente = 
+`Pedido #${pedido.id} confirmado
+
+Olá ${clienteNome}, recebemos o seu pedido.
+
+Itens:
+${itensResumo}
+
+Total: ${total.toFixed(2)} MT
+Tempo estimado: ${tempoEntrega || 'a definir'}
+
+Obrigado por escolher o Origens do Sabor.`;
           promises.push(enviarWhatsApp(telefoneFormatado, msgCliente));
         }
 
-        // CLIENTE E‑mail
-        if (clienteEmail) {
-          const emailClienteHtml = `
-            <h2>✅ Pedido #${pedido.id} confirmado!</h2>
-            <p>Olá <strong>${clienteNome}</strong>,</p>
-            <p>Recebemos o seu pedido e estamos a prepará‑lo com todo o carinho.</p>
-            <h3>Resumo:</h3>
-            <table style="border-collapse: collapse; width: 100%;">
-              <thead><tr style="background:#f2f2f2;"><th>Produto</th><th>Subtotal</th></tr></thead>
-              <tbody>${itensHtml}</tbody>
-            </table>
-            <p><strong>Subtotal:</strong> ${subtotal.toFixed(2)} MT</p>
-            <p><strong>Frete:</strong> ${frete.toFixed(2)} MT</p>
-            <p><strong>Total:</strong> ${total.toFixed(2)} MT</p>
-            <p><strong>Tempo estimado:</strong> ${tempoEntrega || 'a definir'}</p>
-            <p>Obrigado pela preferência! 🍽️</p>
-          `;
-          promises.push(enviarEmail(clienteEmail, `Confirmação do Pedido #${pedido.id}`, emailClienteHtml));
-        }
-
         await Promise.allSettled(promises);
-        console.log(`✅ Notificações do pedido #${pedido.id} processadas em segundo plano.`);
+        console.log(`Notificações do pedido #${pedido.id} processadas em segundo plano.`);
       } catch (err) {
-        console.error(`❌ Erro ao processar notificações do pedido #${pedido.id}:`, err);
+        console.error(`Erro ao processar notificações do pedido #${pedido.id}:`, err);
       }
     };
 
@@ -347,7 +267,7 @@ export const atribuirAgente = async (req: Request, res: Response) => {
       data: { agenteId: Number(agenteId) },
       include: { cliente: true, itens: true },
     });
-    console.log(`📦 Pedido #${pedido.id} atribuído ao agente ${agenteId}`);
+    console.log(`Pedido #${pedido.id} atribuído ao agente ${agenteId}`);
     res.json(pedido);
   } catch (error) {
     console.error(error);
