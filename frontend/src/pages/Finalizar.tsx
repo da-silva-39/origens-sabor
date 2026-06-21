@@ -61,14 +61,12 @@ export default function Finalizar() {
   const [enviando, setEnviando] = useState(false);
   const [carregandoBairros, setCarregandoBairros] = useState(true);
 
-  // Redirecionar se não autenticado
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, loading, navigate]);
 
-  // Carregar bairros
   useEffect(() => {
     const fetchBairros = async () => {
       try {
@@ -85,14 +83,12 @@ export default function Finalizar() {
     fetchBairros();
   }, []);
 
-  // Preencher nome e email do utilizador logado
   useEffect(() => {
     if (user) {
       setForm(prev => ({ ...prev, nome: user.nome || '', email: user.email || '' }));
     }
   }, [user]);
 
-  // Calcular frete quando o bairro muda
   useEffect(() => {
     if (bairroSelecionado) {
       const bairro = bairros.find(b => b.bairro === bairroSelecionado);
@@ -114,7 +110,6 @@ export default function Finalizar() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-
     if (name === 'bairro') {
       setBairroSelecionado(value);
     } else {
@@ -140,6 +135,7 @@ export default function Finalizar() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!validarEmail(form.email)) {
       setErrors(prev => ({ ...prev, email: 'E‑mail inválido' }));
       toast.error('E‑mail inválido');
@@ -190,17 +186,22 @@ export default function Finalizar() {
       const response = await api.post('/pedidos', pedidoData);
       const pedido = response.data;
 
+      // Garantir que todos os campos necessários existem para o PDF
+      const pedidoParaPDF = {
+        id: pedido.id,
+        dataPedido: pedido.dataPedido || new Date().toISOString(),
+        total: pedido.total || total,
+        subtotal: pedido.subtotal !== undefined ? pedido.subtotal : subtotal,
+        frete: pedido.frete !== undefined ? pedido.frete : frete,
+        itens: (pedido.itens && pedido.itens.length > 0) ? pedido.itens : pedidoData.itens,
+        endereco: form.endereco,
+        bairro: bairroSelecionado,
+      };
+
       // Gerar PDF do pedido
       const blob = await pdf(
         <ReciboPedidoPDF
-          pedido={{
-            id: pedido.id,
-            dataPedido: pedido.dataPedido,
-            total: pedido.total,
-            itens: pedido.itens || pedidoData.itens,
-            endereco: form.endereco,
-            bairro: bairroSelecionado,
-          }}
+          pedido={pedidoParaPDF}
           cliente={{ nome: form.nome, email: form.email }}
         />
       ).toBlob();
@@ -216,7 +217,7 @@ export default function Finalizar() {
       clearCart();
       navigate('/dashboard');
     } catch (error: any) {
-      console.error(error);
+      console.error('Erro ao finalizar pedido:', error);
       toast.error(error.response?.data?.error || 'Erro ao finalizar pedido');
     } finally {
       setEnviando(false);
@@ -225,6 +226,7 @@ export default function Finalizar() {
 
   if (loading) return <div className="flex justify-center items-center h-96">Carregando...</div>;
   if (!isAuthenticated) return null;
+
   if (items.length === 0) {
     return (
       <div className="container-custom py-16 text-center">
@@ -244,7 +246,6 @@ export default function Finalizar() {
         <h1 className="text-3xl font-bold text-secundaria mb-6">Finalizar Pedido</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Formulário */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-2xl shadow-md p-6">
               <h2 className="text-xl font-semibold text-secundaria mb-4 flex items-center gap-2">
@@ -342,7 +343,6 @@ export default function Finalizar() {
             </div>
           </div>
 
-          {/* Resumo do pedido */}
           <div className="bg-white rounded-2xl shadow-md p-6 h-fit sticky top-24">
             <h2 className="text-xl font-semibold text-secundaria mb-4">Resumo do pedido</h2>
             <div className="space-y-2 mb-4">
