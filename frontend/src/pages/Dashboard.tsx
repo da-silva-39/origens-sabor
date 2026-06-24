@@ -122,7 +122,7 @@ export default function Dashboard() {
             >
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
               <div className="relative z-10">
-                <div className="text-5xl mb-3 animate-bounce-subtle">🍽️</div>
+                <div className="text-5xl mb-3 animate-bounce-subtle"></div>
                 <div className="text-xl font-semibold">Explorar Cardápio</div>
                 <p className="text-sm opacity-90 mt-2">Descubra novos sabores e faça o seu pedido</p>
                 <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
@@ -135,7 +135,7 @@ export default function Dashboard() {
             >
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
               <div className="relative z-10">
-                <div className="text-5xl mb-3 animate-pulse">🛒</div>
+                <div className="text-5xl mb-3 animate-pulse"></div>
                 <div className="text-xl font-semibold">Meu Carrinho</div>
                 <p className="text-sm opacity-90 mt-2">Revise os itens e finalize o pedido</p>
                 <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
@@ -148,7 +148,7 @@ export default function Dashboard() {
             >
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
               <div className="relative z-10">
-                <div className="text-5xl mb-3">📅</div>
+                <div className="text-5xl mb-3"></div>
                 <div className="text-xl font-semibold">Reservar Mesa</div>
                 <p className="text-sm opacity-90 mt-2">Garanta o seu lugar para uma refeição especial</p>
                 <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
@@ -161,7 +161,7 @@ export default function Dashboard() {
             >
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
               <div className="relative z-10">
-                <div className="text-5xl mb-3">📋</div>
+                <div className="text-5xl mb-3"></div>
                 <div className="text-xl font-semibold">Minhas Reservas</div>
                 <p className="text-sm opacity-90 mt-2">Acompanhe e faça download dos recibos</p>
                 <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
@@ -174,7 +174,7 @@ export default function Dashboard() {
             >
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
               <div className="relative z-10">
-                <div className="text-5xl mb-3">📞</div>
+                <div className="text-5xl mb-3"></div>
                 <div className="text-xl font-semibold">Contactar</div>
                 <p className="text-sm opacity-90 mt-2">Dúvidas? Sugestões? Fale connosco</p>
                 <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
@@ -224,9 +224,9 @@ export default function Dashboard() {
                           'bg-gray-100 text-gray-800'
                         }`}
                       >
-                        {pedido.status === 'PENDENTE' && '⏳ Pendente'}
-                        {pedido.status === 'PREPARANDO' && '👨‍🍳 Preparando'}
-                        {pedido.status === 'ENTREGUE' && '✅ Entregue'}
+                        {pedido.status === 'PENDENTE' && 'Pendente'}
+                        {pedido.status === 'PREPARANDO' && 'Preparando'}
+                        {pedido.status === 'ENTREGUE' && 'Entregue'}
                         {!['PENDENTE', 'PREPARANDO', 'ENTREGUE'].includes(pedido.status) && pedido.status}
                       </span>
                       <span className="font-bold text-primaria text-lg">{pedido.total.toFixed(2)} MT</span>
@@ -241,7 +241,6 @@ export default function Dashboard() {
           <div className="mt-8 text-center">
             <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm text-sm text-gray-600">
               <FiCoffee className="text-primaria" />
-              <span>Precisa de ajuda? Contacte‑nos pelo WhatsApp</span>
             </div>
           </div>
         </div>
