@@ -142,7 +142,7 @@ export default function Footer() {
               </li>
             </ul>
             <div className="mt-6">
-              <h4 className="font-medium mb-2">📍 Como chegar</h4>
+              <h4 className="font-medium mb-2">Como chegar</h4>
               <a
                 href="https://maps.google.com/?q=Origens+do+Sabor+Chimoio"
                 target="_blank"

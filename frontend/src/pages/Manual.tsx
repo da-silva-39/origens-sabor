@@ -8,7 +8,7 @@ export default function Manual() {
         <h1 className="text-4xl font-bold text-center text-secundaria mb-8">Manual do Utilizador</h1>
         <div className="bg-white rounded-2xl shadow-lg p-8 space-y-8">
           <section>
-            <h2 className="text-2xl font-semibold text-primaria mb-4">📱 Para Clientes</h2>
+            <h2 className="text-2xl font-semibold text-primaria mb-4">Para Clientes</h2>
             <ul className="list-disc pl-6 space-y-2 text-gray-700">
               <li><strong>Criar conta:</strong> Aceda a "Entrar" e escolha "Criar conta". Preencha os seus dados.</li>
               <li><strong>Fazer login:</strong> Use o seu e‑mail e senha ou entre com Google.</li>
@@ -21,7 +21,7 @@ export default function Manual() {
             </ul>
           </section>
           <section>
-            <h2 className="text-2xl font-semibold text-primaria mb-4">🛠️ Para Administradores</h2>
+            <h2 className="text-2xl font-semibold text-primaria mb-4">Para Administradores</h2>
             <ul className="list-disc pl-6 space-y-2 text-gray-700">
               <li><strong>Login:</strong> Use as credenciais fornecidas (role ADMIN).</li>
               <li><strong>Dashboard:</strong> Aceda a <code>/admin/dashboard</code> para visão geral.</li>
@@ -34,7 +34,7 @@ export default function Manual() {
             </ul>
           </section>
           <section>
-            <h2 className="text-2xl font-semibold text-primaria mb-4">🚚 Para Agentes (Entregadores)</h2>
+            <h2 className="text-2xl font-semibold text-primaria mb-4">Para Agentes (Entregadores)</h2>
             <ul className="list-disc pl-6 space-y-2 text-gray-700">
               <li><strong>Login:</strong> Utilize as credenciais de agente (role AGENTE).</li>
               <li><strong>Dashboard:</strong> Aceda a <code>/agente/dashboard</code> para ver os pedidos atribuídos.</li>
@@ -43,7 +43,7 @@ export default function Manual() {
             </ul>
           </section>
           <section>
-            <h2 className="text-2xl font-semibold text-primaria mb-4">❓ Dúvidas Frequentes</h2>
+            <h2 className="text-2xl font-semibold text-primaria mb-4">Dúvidas Frequentes</h2>
             <div className="space-y-3">
               <div>
                 <strong className="text-secundaria">Como calcular o frete?</strong>

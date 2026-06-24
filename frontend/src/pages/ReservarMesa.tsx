@@ -96,10 +96,7 @@ export default function ReservarMesa() {
         {/* Título e instruções */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-secundaria mb-4">Reserve a sua Mesa</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Garanta um lugar no Origens do Sabor para momentos especiais. Escolha a mesa, a data e a hora,
-            e envie a sua solicitação. A reserva será confirmada pela nossa equipa.
-          </p>
+         
         </div>
 
         {/* Passo a passo */}

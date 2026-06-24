@@ -84,13 +84,12 @@ export default function Home() {
         {isAuthenticated && (
           <div className="bg-gradient-to-r from-primaria to-secundaria text-white py-6">
             <div className="container-custom text-center">
-              <h2 className="text-2xl md:text-3xl font-bold mb-2">Bem‑vindo de volta, {user?.nome?.split(' ')[0]}! 👋</h2>
-              <p className="text-lg mb-4">Aproveite ao máximo o nosso sistema:</p>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">Bem‑vindo de volta, {user?.nome?.split(' ')[0]}! </h2>
               <div className="flex flex-wrap justify-center gap-3">
-                <button onClick={() => navigate("/cardapio")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">🍽️ Explorar Cardápio</button>
-                <button onClick={() => navigate("/reservar-mesa")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">📅 Reservar Mesa</button>
-                <button onClick={() => navigate("/minhas-reservas")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">📋 Minhas Reservas</button>
-                <button onClick={() => navigate("/perfil")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">👤 Meu Perfil</button>
+                <button onClick={() => navigate("/cardapio")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">Explorar Cardápio</button>
+                <button onClick={() => navigate("/reservar-mesa")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">Reservar Mesa</button>
+                <button onClick={() => navigate("/minhas-reservas")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">Minhas Reservas</button>
+                <button onClick={() => navigate("/perfil")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">Meu Perfil</button>
               </div>
             </div>
           </div>

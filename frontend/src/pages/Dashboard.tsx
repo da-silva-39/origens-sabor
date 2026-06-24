@@ -74,11 +74,9 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold text-secundaria">
-                    Olá, {user?.nome} 👋
+                    Olá, {user?.nome} 
                   </h1>
-                  <p className="text-gray-500 mt-1">
-                    Que bom ter‑lo de volta! Pronto para fazer o seu pedido ou reservar uma mesa?
-                  </p>
+                 
                 </div>
               </div>
               {user?.fotoUrl && (
