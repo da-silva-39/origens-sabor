@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiEye, FiEyeOff } from 'react-icons/fi'; // ← importar ícones
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 export default function Registro() {
   const [nome, setNome] = useState('');
@@ -10,19 +10,44 @@ export default function Registro() {
   const [telefone, setTelefone] = useState('');
   const [senha, setSenha] = useState('');
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // ← estado para mostrar senha
+  const [showPassword, setShowPassword] = useState(false);
+  const [telefoneError, setTelefoneError] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  // Validação do número moçambicano
+  const validarTelefone = (numero: string): boolean => {
+    // Formato: +258 + 2 dígitos (82-87) + 7 dígitos = 12 caracteres
+    const regex = /^\+258[8][2-7]\d{7}$/;
+    return regex.test(numero);
+  };
+
+  const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valor = e.target.value;
+    setTelefone(valor);
+    if (valor && !validarTelefone(valor)) {
+      setTelefoneError('Número inválido. Use +258 82 1234567 (9 dígitos após +258)');
+    } else {
+      setTelefoneError('');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Validar telefone se foi preenchido
+    if (telefone && !validarTelefone(telefone)) {
+      setError('Número de telefone inválido. Use +258 82 1234567');
+      return;
+    }
     try {
       await register(nome, email, telefone, senha);
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       if (user.role === 'ADMIN') navigate('/admin/dashboard');
       else if (user.role === 'AGENTE') navigate('/agente/dashboard');
       else navigate('/dashboard');
-    } catch (err) { setError('Erro ao registar'); }
+    } catch (err) {
+      setError('Erro ao registar');
+    }
   };
 
   return (
@@ -47,13 +72,18 @@ export default function Registro() {
             className="w-full border rounded-full px-4 py-2"
             required
           />
-          <input
-            type="tel"
-            placeholder="Telefone"
-            value={telefone}
-            onChange={e => setTelefone(e.target.value)}
-            className="w-full border rounded-full px-4 py-2"
-          />
+          <div>
+            <input
+              type="tel"
+              placeholder="+258 82 1234567"
+              value={telefone}
+              onChange={handleTelefoneChange}
+              className={`w-full border rounded-full px-4 py-2 ${telefoneError ? 'border-red-500' : ''}`}
+            />
+            {telefoneError && (
+              <p className="text-red-500 text-xs mt-1">{telefoneError}</p>
+            )}
+          </div>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
