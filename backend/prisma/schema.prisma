@@ -91,8 +91,7 @@ model ItemPedido {
 }
 
 model Mesa {
-  id            Int     @id
-  numero        Int     @unique   // ← novo campo
+  numero        Int     @id
   qrCode        String? @unique @map("qrCode")
   ocupada       Boolean @default(false)
   pedidoAtualId String? @map("pedidoAtualId")
@@ -113,7 +112,7 @@ model Reserva {
   updatedAt         DateTime @updatedAt @map("updatedAt")
 
   cliente Usuario @relation(fields: [clienteId], references: [id])
-  mesa    Mesa    @relation(fields: [mesaId], references: [id])
+  mesa    Mesa    @relation(fields: [mesaId], references: [numero])
 
   @@map("reservas")
 }
