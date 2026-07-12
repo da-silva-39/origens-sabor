@@ -27,13 +27,14 @@ export const criarMesa = async (req: Request, res: Response) => {
     if (existente) {
       return res.status(409).json({ error: 'Já existe uma mesa com este número' });
     }
+    // O campo id é auto-increment (deve ter @default(autoincrement()) no schema)
+    // qrCode não é enviado – será NULL por padrão (se a coluna existir)
     const novaMesa = await prisma.mesa.create({
-      
       data: {
         numero,
         ocupada: ocupada ?? false,
-        qrCode: undefined, // opcional, pode ser removido se não usar
-      } as any,
+        // qrCode não é necessário; se quiser pode usar undefined
+      },
     });
     res.status(201).json(novaMesa);
   } catch (error) {

@@ -83,7 +83,6 @@ export const criarReserva = async (req: Request, res: Response) => {
     const adminWhats = process.env.NOTIFICATION_WHATSAPP_TO;
     const frontendUrl = process.env.FRONTEND_URL || 'https://origens-sabor.vercel.app';
 
-    // Mensagem para o administrador (detalhada)
     if (adminWhats) {
       const msgAdmin = 
 `Nova Reserva #${reserva.id}
@@ -101,7 +100,6 @@ Gerir reserva: ${frontendUrl}/admin/reservas`;
       await enviarWhatsApp(adminWhats, msgAdmin);
     }
 
-    // Mensagem para o cliente (resumida)
     if (user.telefone) {
       const msgCliente = 
 `Reserva #${reserva.id} solicitada
@@ -192,7 +190,6 @@ export const confirmarReserva = async (req: Request, res: Response) => {
       include: { cliente: { select: { nome: true, email: true, telefone: true } }, mesa: true },
     });
 
-    // Notificar o cliente por WhatsApp (confirmar a reserva)
     if (reserva.cliente.telefone) {
       const msgCliente = 
 `Reserva #${reserva.id} confirmada
@@ -248,7 +245,7 @@ export const obterReserva = async (req: Request, res: Response) => {
   }
 };
 
-// ==================== VALIDAR QR CODE ====================
+// ==================== VALIDAR QR CODE (com optional chaining) ====================
 export const validarReservaQR = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { codigo } = req.query;
@@ -281,9 +278,9 @@ export const validarReservaQR = async (req: Request, res: Response) => {
       valida: true,
       reserva: {
         id: reserva.id,
-        mesa: reserva.mesa.numero,
+        mesa: reserva.mesa?.numero,   // optional chaining evita erro de tipo 'never'
         dataHora: reserva.dataHora,
-        cliente: reserva.cliente.nome,
+        cliente: reserva.cliente?.nome,
         quantidadePessoas: reserva.quantidadePessoas
       }
     });
