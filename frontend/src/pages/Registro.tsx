@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import { FiEye, FiEyeOff } from 'react-icons/fi'; // ← importar ícones
 
 export default function Registro() {
   const [nome, setNome] = useState('');
@@ -9,6 +10,7 @@ export default function Registro() {
   const [telefone, setTelefone] = useState('');
   const [senha, setSenha] = useState('');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // ← estado para mostrar senha
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -29,13 +31,53 @@ export default function Registro() {
         <h1 className="text-3xl font-bold text-center text-secundaria mb-6">Criar Conta</h1>
         {error && <div className="bg-red-100 text-red-700 p-2 rounded mb-4">{error}</div>}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="text" placeholder="Nome" value={nome} onChange={e => setNome(e.target.value)} className="w-full border rounded-full px-4 py-2" required />
-          <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border rounded-full px-4 py-2" required />
-          <input type="tel" placeholder="Telefone" value={telefone} onChange={e => setTelefone(e.target.value)} className="w-full border rounded-full px-4 py-2" />
-          <input type="password" placeholder="Senha" value={senha} onChange={e => setSenha(e.target.value)} className="w-full border rounded-full px-4 py-2" required />
-          <button type="submit" className="w-full bg-primaria text-white py-2 rounded-full">Registar</button>
+          <input
+            type="text"
+            placeholder="Nome"
+            value={nome}
+            onChange={e => setNome(e.target.value)}
+            className="w-full border rounded-full px-4 py-2"
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="w-full border rounded-full px-4 py-2"
+            required
+          />
+          <input
+            type="tel"
+            placeholder="Telefone"
+            value={telefone}
+            onChange={e => setTelefone(e.target.value)}
+            className="w-full border rounded-full px-4 py-2"
+          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Senha"
+              value={senha}
+              onChange={e => setSenha(e.target.value)}
+              className="w-full border rounded-full px-4 py-2 pr-12"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+            </button>
+          </div>
+          <button type="submit" className="w-full bg-primaria text-white py-2 rounded-full hover:bg-secundaria transition">
+            Registar
+          </button>
         </form>
-        <p className="text-center mt-6">Já tem conta? <Link to="/login" className="text-primaria hover:underline">Entrar</Link></p>
+        <p className="text-center mt-6">
+          Já tem conta? <Link to="/login" className="text-primaria hover:underline">Entrar</Link>
+        </p>
       </div>
     </div>
   );
