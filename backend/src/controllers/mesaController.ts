@@ -33,7 +33,7 @@ export const criarMesa = async (req: Request, res: Response) => {
       data: {
         numero,
         ocupada: ocupada ?? false,
-        qrCode: null, // opcional, pode ser removido se não usar
+        qrCode: undefined, // opcional, pode ser removido se não usar
       } as any,
     });
     res.status(201).json(novaMesa);
