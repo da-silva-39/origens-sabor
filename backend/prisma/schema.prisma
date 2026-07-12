@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  CLIENTE
+  AGENTE
+}
+
 model Usuario {
   id                Int                 @id @default(autoincrement())
   nome              String
@@ -78,13 +84,14 @@ model ItemPedido {
 }
 
 model Mesa {
-  id            Int       @id @default(autoincrement())
-  numero        Int       @unique
-  qrCode        String?   @unique @map("qrCode")
-  ocupada       Boolean?  @default(false)
-  pedidoAtualId String?   @map("pedidoAtualId")
-  createdAt     DateTime? @default(now()) @db.Timestamp(6)
-  updatedAt     DateTime? @default(now()) @db.Timestamp(6)
+  id            Int      @id @default(autoincrement())
+  numero        Int      @unique
+  qrCode        String?  @unique @map("qrCode")
+  ocupada       Boolean  @default(false)
+  pedidoAtualId String?  @map("pedidoAtualId")
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt @db.Timestamp(6)
+  reservas      Reserva[]
 
   @@map("mesas")
 }
@@ -101,10 +108,10 @@ model Reserva {
   createdAt         DateTime @default(now()) @map("createdAt")
   updatedAt         DateTime @updatedAt @map("updatedAt")
   cliente           Usuario  @relation(fields: [clienteId], references: [id])
+  mesa              Mesa     @relation(fields: [mesaId], references: [id])
 
   @@map("reservas")
 }
-
 
 model TaxaFrete {
   id            Int    @id @default(autoincrement())
@@ -132,10 +139,4 @@ model LocalizacaoAgente {
   agente    Usuario  @relation(fields: [agenteId], references: [id])
 
   @@map("localizacoes_agente")
-}
-
-enum Role {
-  ADMIN
-  CLIENTE
-  AGENTE
 }
