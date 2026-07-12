@@ -15,18 +15,19 @@ export default function Registro() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  // Validação do número moçambicano
+  // Valida número moçambicano (9 dígitos: 8, 2-7, + 7 dígitos)
   const validarTelefone = (numero: string): boolean => {
-    // Formato: +258 + 2 dígitos (82-87) + 7 dígitos = 12 caracteres
-    const regex = /^\+258[8][2-7]\d{7}$/;
-    return regex.test(numero);
+    const apenasDigitos = numero.replace(/\D/g, '');
+    if (apenasDigitos.length !== 9) return false;
+    const regex = /^8[2-7]\d{7}$/;
+    return regex.test(apenasDigitos);
   };
 
   const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const valor = e.target.value;
+    const valor = e.target.value.replace(/\D/g, '').slice(0, 9); // só dígitos, máx 9
     setTelefone(valor);
-    if (valor && !validarTelefone(valor)) {
-      setTelefoneError('Número inválido. Use +258 82 1234567 (9 dígitos após +258)');
+    if (valor.length > 0 && !validarTelefone(valor)) {
+      setTelefoneError('Número inválido. Deve ter 9 dígitos, começar com 8 e o segundo dígito entre 2-7.');
     } else {
       setTelefoneError('');
     }
@@ -34,13 +35,14 @@ export default function Registro() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Validar telefone se foi preenchido
     if (telefone && !validarTelefone(telefone)) {
-      setError('Número de telefone inválido. Use +258 82 1234567');
+      setError('Número de telefone inválido. Formato: 8[2-7] + 7 dígitos (ex: 82 1234567)');
       return;
     }
     try {
-      await register(nome, email, telefone, senha);
+      // Envia o número completo com +258 para o backend
+      const telefoneCompleto = telefone ? `+258${telefone}` : '';
+      await register(nome, email, telefoneCompleto, senha);
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       if (user.role === 'ADMIN') navigate('/admin/dashboard');
       else if (user.role === 'AGENTE') navigate('/agente/dashboard');
@@ -73,13 +75,18 @@ export default function Registro() {
             required
           />
           <div>
-            <input
-              type="tel"
-              placeholder="+258 82 1234567"
-              value={telefone}
-              onChange={handleTelefoneChange}
-              className={`w-full border rounded-full px-4 py-2 ${telefoneError ? 'border-red-500' : ''}`}
-            />
+            <div className="flex items-center border rounded-full overflow-hidden focus-within:ring-2 focus-within:ring-primaria">
+              <span className="bg-gray-100 px-3 py-2 text-gray-600 font-medium">+258</span>
+              <input
+                type="tel"
+                placeholder="82 1234567"
+                value={telefone}
+                onChange={handleTelefoneChange}
+                className={`w-full border-0 px-4 py-2 focus:outline-none ${telefoneError ? 'text-red-500' : ''}`}
+                maxLength={9}
+                inputMode="numeric"
+              />
+            </div>
             {telefoneError && (
               <p className="text-red-500 text-xs mt-1">{telefoneError}</p>
             )}
