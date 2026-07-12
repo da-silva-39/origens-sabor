@@ -5,6 +5,8 @@ import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
 import 'leaflet/dist/leaflet.css';
 
 // Corrigir ícones do Leaflet (problema comum)

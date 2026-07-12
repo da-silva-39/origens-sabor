@@ -91,10 +91,8 @@ export default function MinhasReservas() {
 
   const handleBaixarRecibo = async (reserva: Reserva) => {
     try {
-      // Gera o QR code com link de validação
       const qrData = `https://origens-sabor.vercel.app/reservas/validar/${reserva.id}?codigo=${reserva.codigoRecibo}`;
       const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
-      // Gera o PDF
       const blob = await pdf(<ReciboReservaPDF reserva={reserva} qrDataUrl={qrDataUrl} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -105,6 +103,16 @@ export default function MinhasReservas() {
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       toast.error('Erro ao gerar PDF. Verifique se os dados da reserva estão completos.');
+    }
+  };
+
+  // Função de cores para status
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDENTE': return 'bg-yellow-100 text-yellow-800';
+      case 'CONFIRMADA': return 'bg-green-100 text-green-800';
+      case 'CANCELADA': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -124,11 +132,9 @@ export default function MinhasReservas() {
                 <p><strong>Data:</strong> {new Date(r.dataHora).toLocaleString('pt-PT')}</p>
                 <p><strong>Pessoas:</strong> {r.quantidadePessoas}</p>
                 <p><strong>Status:</strong> 
-                  <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
-                    r.status === 'PENDENTE' ? 'bg-yellow-100 text-yellow-800' :
-                    r.status === 'CONFIRMADA' ? 'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>{r.status}</span>
+                  <span className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(r.status)}`}>
+                    {r.status}
+                  </span>
                 </p>
                 <p><strong>Código:</strong> {r.codigoRecibo}</p>
               </div>

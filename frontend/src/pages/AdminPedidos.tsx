@@ -75,6 +75,24 @@ export default function AdminPedidos() {
     }
   };
 
+  // Função para cores dos status
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDENTE':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'PREPARANDO':
+        return 'bg-blue-100 text-blue-800';
+      case 'SAIU_ENTREGA':
+        return 'bg-purple-100 text-purple-800';
+      case 'ENTREGUE':
+        return 'bg-green-100 text-green-800';
+      case 'CANCELADO':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   if (loading) return <div className="text-center py-20">Carregando...</div>;
 
   return (
@@ -94,17 +112,22 @@ export default function AdminPedidos() {
                 <td className="p-3">{p.endereco}</td>
                 <td className="p-3">{p.total.toFixed(2)} MT</td>
                 <td className="p-3">
-                  <select
-                    value={p.status}
-                    onChange={e => atualizarStatus(p.id, e.target.value)}
-                    className="border rounded-full px-2 py-1"
-                  >
-                    <option value="PENDENTE">Pendente</option>
-                    <option value="PREPARANDO">Preparando</option>
-                    <option value="SAIU_ENTREGA">Saiu entrega</option>
-                    <option value="ENTREGUE">Entregue</option>
-                    <option value="CANCELADO">Cancelado</option>
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(p.status)}`}>
+                      {p.status}
+                    </span>
+                    <select
+                      value={p.status}
+                      onChange={e => atualizarStatus(p.id, e.target.value)}
+                      className="border rounded-full px-2 py-1 text-sm"
+                    >
+                      <option value="PENDENTE">Pendente</option>
+                      <option value="PREPARANDO">Preparando</option>
+                      <option value="SAIU_ENTREGA">Saiu entrega</option>
+                      <option value="ENTREGUE">Entregue</option>
+                      <option value="CANCELADO">Cancelado</option>
+                    </select>
+                  </div>
                 </td>
                 <td className="p-3">
                   <select

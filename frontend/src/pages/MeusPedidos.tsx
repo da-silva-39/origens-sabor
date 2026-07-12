@@ -32,18 +32,23 @@ export default function MeusPedidos() {
   const [filtroStatus, setFiltroStatus] = useState('');
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
+  const fetchPedidos = async () => {
+    try {
+      const res = await api.get('/pedidos/cliente');
+      setPedidos(res.data);
+    } catch (error) {
+      toast.error('Erro ao carregar pedidos');
+    } finally {
+      setCarregando(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchPedidos = async () => {
-      try {
-        const res = await api.get('/pedidos/cliente');
-        setPedidos(res.data);
-      } catch (error) {
-        toast.error('Erro ao carregar pedidos');
-      } finally {
-        setCarregando(false);
-      }
-    };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPedidos();
+    // Polling a cada 10 segundos para refletir mudanças de status (admin)
+    const interval = setInterval(fetchPedidos, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleBaixarRecibo = async (pedido: Pedido) => {
@@ -67,6 +72,17 @@ export default function MeusPedidos() {
 
   const toggleExpand = (id: number) => {
     setExpandedId(expandedId === id ? null : id);
+  };
+
+  // Cores para status (já existiam, mantive)
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDENTE': return 'bg-yellow-100 text-yellow-800';
+      case 'PREPARANDO': return 'bg-blue-100 text-blue-800';
+      case 'ENTREGUE': return 'bg-green-100 text-green-800';
+      case 'CANCELADO': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   if (carregando) return <div className="text-center py-20">Carregando pedidos...</div>;
@@ -102,17 +118,12 @@ export default function MeusPedidos() {
                 className="p-4 flex flex-wrap justify-between items-center cursor-pointer hover:bg-gray-50 transition"
                 onClick={() => toggleExpand(pedido.id)}
               >
-                <div className="flex gap-4 items-center">
+                <div className="flex gap-4 items-center flex-wrap">
                   <span className="font-bold text-primaria">#{pedido.id}</span>
                   <span className="text-sm text-gray-500">
                     {new Date(pedido.dataPedido).toLocaleDateString('pt-PT')}
                   </span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    pedido.status === 'PENDENTE' ? 'bg-yellow-100 text-yellow-800' :
-                    pedido.status === 'PREPARANDO' ? 'bg-blue-100 text-blue-800' :
-                    pedido.status === 'ENTREGUE' ? 'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(pedido.status)}`}>
                     {pedido.status}
                   </span>
                 </div>

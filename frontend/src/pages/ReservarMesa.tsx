@@ -26,19 +26,24 @@ export default function ReservarMesa() {
   const [disponivel, setDisponivel] = useState<boolean | null>(null);
   const [verificando, setVerificando] = useState(false);
 
-  // Carregar mesas disponíveis
+  // Carregar mesas (com polling para atualizar ocupação)
+  const fetchMesas = async () => {
+    try {
+      const res = await api.get('/mesas');
+      setMesas(res.data);
+    } catch (error) {
+      toast.error('Erro ao carregar mesas');
+    } finally {
+      setCarregandoMesas(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchMesas = async () => {
-      try {
-        const res = await api.get('/mesas');
-        setMesas(res.data);
-      } catch (error) {
-        toast.error('Erro ao carregar mesas');
-      } finally {
-        setCarregandoMesas(false);
-      }
-    };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMesas();
+    // Polling a cada 10 segundos para refletir mudanças de ocupação
+    const interval = setInterval(fetchMesas, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   // Verificar disponibilidade da mesa para a data/hora selecionada
@@ -59,7 +64,7 @@ export default function ReservarMesa() {
       }
     };
 
-    const timer = setTimeout(checkDisponibilidade, 500); // debounce
+    const timer = setTimeout(checkDisponibilidade, 500);
     return () => clearTimeout(timer);
   }, [mesaId, dataHora]);
 
@@ -93,10 +98,8 @@ export default function ReservarMesa() {
   return (
     <div className="min-h-screen bg-fundo py-12">
       <div className="container-custom px-4 max-w-6xl mx-auto">
-        {/* Título e instruções */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-secundaria mb-4">Reserve a sua Mesa</h1>
-         
         </div>
 
         {/* Passo a passo */}
@@ -129,7 +132,7 @@ export default function ReservarMesa() {
           </div>
         </div>
 
-        {/* Lista de mesas (cards) */}
+        {/* Lista de mesas com cores */}
         <div className="mb-10">
           <h2 className="text-2xl font-semibold text-secundaria mb-4 flex items-center gap-2">
             <FiMapPin className="text-primaria" /> Mesas disponíveis
@@ -149,16 +152,20 @@ export default function ReservarMesa() {
                     onClick={() => !isOcupada && selecionarMesa(mesa.id)}
                     className={`
                       cursor-pointer rounded-xl p-4 text-center transition-all duration-200 border-2
-                      ${isOcupada ? 'opacity-50 cursor-not-allowed bg-gray-100 border-gray-300' : ''}
-                      ${isSelecionada && !isOcupada ? 'border-primaria bg-primaria/10 shadow-md' : 'border-gray-200 bg-white hover:border-primaria/50'}
+                      ${isOcupada 
+                        ? 'bg-red-50 border-red-300 opacity-80 cursor-not-allowed' 
+                        : isSelecionada 
+                          ? 'bg-green-50 border-green-500 shadow-md' 
+                          : 'bg-white border-gray-200 hover:border-primaria/50 hover:shadow'
+                      }
                     `}
                   >
                     <div className="text-2xl font-bold text-secundaria">Mesa {mesa.numero}</div>
-                    <div className="text-xs mt-1 flex items-center justify-center gap-1">
+                    <div className="text-xs mt-1 flex items-center justify-center gap-1 font-semibold">
                       {isOcupada ? (
-                        <><FiAlertCircle className="text-red-500" /> Ocupada</>
+                        <><FiAlertCircle className="text-red-500" /> <span className="text-red-600">Ocupada</span></>
                       ) : (
-                        <><FiCheckCircle className="text-green-500" /> Disponível</>
+                        <><FiCheckCircle className="text-green-500" /> <span className="text-green-600">Disponível</span></>
                       )}
                     </div>
                   </div>
@@ -167,7 +174,7 @@ export default function ReservarMesa() {
             </div>
           )}
           <p className="text-xs text-gray-400 mt-3 text-center">
-            * Clique numa mesa disponível para a selecionar. A disponibilidade pode variar em tempo real.
+            * Clique numa mesa disponível para a selecionar. A disponibilidade atualiza automaticamente a cada 10 segundos.
           </p>
         </div>
 

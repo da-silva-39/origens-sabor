@@ -71,6 +71,20 @@ export default function AdminReservas() {
     }
   };
 
+  // Função auxiliar para cores dos status
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'PENDENTE':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'CONFIRMADA':
+        return 'bg-green-100 text-green-800';
+      case 'CANCELADA':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   if (carregando) return <div className="text-center py-20">Carregando...</div>;
 
   return (
@@ -91,7 +105,11 @@ export default function AdminReservas() {
                 <td>Mesa {r.mesa.numero}</td>
                 <td>{new Date(r.dataHora).toLocaleString('pt-PT')}</td>
                 <td>{r.quantidadePessoas}</td>
-                <td>{r.status}</td>
+                <td>
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(r.status)}`}>
+                    {r.status}
+                  </span>
+                </td>
                 <td className="space-x-2">
                   {r.status === 'PENDENTE' && (
                     <button onClick={() => handleConfirmar(r.id)} className="bg-green-600 text-white px-3 py-1 rounded-full text-sm hover:bg-green-700">Confirmar</button>
