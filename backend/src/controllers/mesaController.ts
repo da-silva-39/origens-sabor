@@ -28,8 +28,7 @@ export const criarMesa = async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'Já existe uma mesa com este número' });
     }
     const novaMesa = await prisma.mesa.create({
-      // prisma type generation in this project expects an 'id' in MesaCreateInput for some schemas;
-      // casting data to any avoids the incorrect type requirement while keeping runtime behavior.
+      
       data: {
         numero,
         ocupada: ocupada ?? false,
