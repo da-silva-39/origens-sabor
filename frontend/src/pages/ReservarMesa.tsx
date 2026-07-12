@@ -10,7 +10,7 @@ import { FiCalendar, FiUsers, FiMapPin, FiCheckCircle, FiAlertCircle, FiInfo } f
 interface Mesa {
   id: number;
   numero: number;
-  estado: string; // "LIVRE" ou "OCUPADA"
+  ocupada: boolean;   // ← agora booleano
 }
 
 export default function ReservarMesa() {
@@ -41,7 +41,7 @@ export default function ReservarMesa() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMesas();
-    // Polling a cada 10 segundos para refletir mudanças de ocupação
+    // Polling a cada 10 segundos para refletir mudanças de ocupação (admin)
     const interval = setInterval(fetchMesas, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -144,7 +144,7 @@ export default function ReservarMesa() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
               {mesas.map((mesa) => {
-                const isOcupada = mesa.estado === 'OCUPADA';
+                const isOcupada = mesa.ocupada;   // ← agora booleano
                 const isSelecionada = mesaId === mesa.id;
                 return (
                   <div
@@ -194,8 +194,8 @@ export default function ReservarMesa() {
               >
                 <option value="">Selecione uma mesa</option>
                 {mesas.map((m) => (
-                  <option key={m.id} value={m.id} disabled={m.estado === 'OCUPADA'}>
-                    Mesa {m.numero} {m.estado === 'OCUPADA' ? '(ocupada)' : '(disponível)'}
+                  <option key={m.id} value={m.id} disabled={m.ocupada}>
+                    Mesa {m.numero} {m.ocupada ? '(ocupada)' : '(disponível)'}
                   </option>
                 ))}
               </select>

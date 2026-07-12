@@ -9,7 +9,7 @@ export const listarMesas = async (req: Request, res: Response) => {
     const mesas = await prisma.mesa.findMany({
       orderBy: { numero: 'asc' },
     });
-    res.json(mesas);
+    res.json(mesas); // já inclui ocupada
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro ao listar mesas' });
