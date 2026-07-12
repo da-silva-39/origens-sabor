@@ -105,6 +105,7 @@ model Reserva {
   @@map("reservas")
 }
 
+
 model TaxaFrete {
   id            Int    @id @default(autoincrement())
   bairro        String @unique
