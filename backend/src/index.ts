@@ -97,3 +97,8 @@ app.get('/api/auth/google/callback',
 app.get('/', (req, res) => res.send('API OK'));
 
 app.listen(port, () => console.log(`Servidor na porta ${port}`));
+
+// Rota de saúde para monitorização
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
