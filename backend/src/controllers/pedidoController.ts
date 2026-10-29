@@ -1,9 +1,10 @@
 // backend/src/controllers/pedidoController.ts
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-import twilio from 'twilio';
+import { prisma } from '../config/prisma';
+import { sendPedidoEmail } from '../services/emailService';
+import { enviarWhatsApp } from '../services/whatsappService';
 
-const prisma = new PrismaClient();
+const round2 = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
 // ==================== Validações ====================
 function validarEmail(email: string): boolean {
@@ -21,32 +22,6 @@ function formatarTelefone(telefone: string): string {
   if (telefone.startsWith('+258')) return telefone;
   if (telefone.match(/^[8][2-7]\d{7}$/)) return '+258' + telefone;
   return telefone;
-}
-
-// ==================== Configuração do Twilio ====================
-const twilioClient = (() => {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  if (sid && token) return twilio(sid, token);
-  console.warn('Twilio não configurado');
-  return null;
-})();
-
-// ==================== Função WhatsApp ====================
-async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> {
-  if (!twilioClient) return;
-  const from = process.env.TWILIO_WHATSAPP_NUMBER;
-  if (!from || !destino) return;
-  try {
-    await twilioClient.messages.create({
-      body: mensagem,
-      from: `whatsapp:${from}`,
-      to: `whatsapp:${destino}`,
-    });
-    console.log(`WhatsApp enviado para ${destino}`);
-  } catch (error) {
-    console.error(`Erro WhatsApp ${destino}:`, error);
-  }
 }
 
 // ==================== CLIENTE ====================
@@ -68,9 +43,9 @@ export const listarPedidosCliente = async (req: Request, res: Response) => {
 // ==================== CRIAR PEDIDO ====================
 export const criarPedido = async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const { clienteNome, clienteEmail, telefone, endereco, bairro, subtotal, frete, total, itens, tempoEntrega } = req.body;
+  const { clienteNome, clienteEmail, telefone, endereco, bairro, itens, tempoEntrega } = req.body;
 
-  if (!clienteNome || !clienteEmail || !telefone || !endereco || !bairro || !itens || itens.length === 0) {
+  if (!clienteNome || !clienteEmail || !telefone || !endereco || !bairro || !Array.isArray(itens) || itens.length === 0) {
     return res.status(400).json({ error: 'Dados incompletos' });
   }
   if (!validarEmail(clienteEmail)) {
@@ -83,6 +58,42 @@ export const criarPedido = async (req: Request, res: Response) => {
   const telefoneFormatado = formatarTelefone(telefone);
 
   try {
+    const produtoIds = [...new Set(itens.map((item: any) => Number(item.produtoId)))];
+    if (produtoIds.some((id) => !Number.isInteger(id) || id <= 0)) {
+      return res.status(400).json({ error: 'Produto inválido no pedido' });
+    }
+
+    const produtos = await prisma.produto.findMany({ where: { id: { in: produtoIds } } });
+    if (produtos.length !== produtoIds.length) {
+      return res.status(400).json({ error: 'Um ou mais produtos já não estão disponíveis' });
+    }
+
+    const produtosPorId = new Map(produtos.map((produto) => [produto.id, produto]));
+    const itensCalculados = [];
+    for (const item of itens) {
+      const quantidade = Number(item.quantidade);
+      if (!Number.isInteger(quantidade) || quantidade <= 0) {
+        return res.status(400).json({ error: 'Quantidade inválida no pedido' });
+      }
+      const produto = produtosPorId.get(Number(item.produtoId))!;
+      itensCalculados.push({
+        produtoId: produto.id,
+        produtoNome: produto.nome,
+        precoUnitario: produto.preco,
+        quantidade,
+        subtotal: round2(produto.preco * quantidade),
+      });
+    }
+
+    const taxaFrete = await prisma.taxaFrete.findUnique({ where: { bairro } });
+    if (!taxaFrete) {
+      return res.status(400).json({ error: `Taxa de frete não disponível para o bairro ${bairro}` });
+    }
+
+    const subtotal = round2(itensCalculados.reduce((acc, item) => acc + item.subtotal, 0));
+    const frete = taxaFrete.valor;
+    const total = round2(subtotal + frete);
+
     const pedido = await prisma.pedido.create({
       data: {
         clienteId: user.id,
@@ -92,15 +103,7 @@ export const criarPedido = async (req: Request, res: Response) => {
         frete,
         total,
         status: 'PENDENTE',
-        itens: {
-          create: itens.map((item: any) => ({
-            produtoId: item.produtoId,
-            produtoNome: item.produtoNome,
-            precoUnitario: item.precoUnitario,
-            quantidade: item.quantidade,
-            subtotal: item.subtotal,
-          })),
-        },
+        itens: { create: itensCalculados },
       },
       include: { itens: true },
     });
@@ -131,9 +134,9 @@ Bairro: ${bairro}
 Itens:
 ${itensResumo}
 
-Subtotal: ${subtotal.toFixed(2)} MT
-Frete: ${frete.toFixed(2)} MT
-Total: ${total.toFixed(2)} MT
+Subtotal: ${pedido.subtotal.toFixed(2)} MT
+Frete: ${pedido.frete.toFixed(2)} MT
+Total: ${pedido.total.toFixed(2)} MT
 
 Status: ${pedido.status}
 Data/Hora: ${dataHora}`;
@@ -150,12 +153,28 @@ Olá ${clienteNome}, recebemos o seu pedido.
 Itens:
 ${itensResumo}
 
-Total: ${total.toFixed(2)} MT
+Total: ${pedido.total.toFixed(2)} MT
 Tempo estimado: ${tempoEntrega || 'a definir'}
 
 Obrigado por escolher o Origens do Sabor.`;
           promises.push(enviarWhatsApp(telefoneFormatado, msgCliente));
         }
+
+        promises.push(sendPedidoEmail({
+          id: pedido.id,
+          clienteNome,
+          endereco,
+          bairro,
+          subtotal: pedido.subtotal,
+          frete: pedido.frete,
+          total: pedido.total,
+          status: pedido.status,
+          itens: pedido.itens.map((item) => ({
+            nome: item.produtoNome,
+            quantidade: item.quantidade,
+            precoUnitario: item.precoUnitario,
+          })),
+        }));
 
         await Promise.allSettled(promises);
         console.log(`Notificações do pedido #${pedido.id} processadas em segundo plano.`);

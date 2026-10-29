@@ -1,9 +1,6 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 export default function GoogleCallback() {
-  const navigate = useNavigate();
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
@@ -11,27 +8,25 @@ export default function GoogleCallback() {
 
     if (token && userParam) {
       localStorage.setItem('token', token);
-      // O userParam foi codificado com encodeURIComponent, precisa de decode
       const decodedUser = decodeURIComponent(userParam);
       localStorage.setItem('user', decodedUser);
       try {
         const user = JSON.parse(decodedUser);
-        // Redireciona baseado na role
-        if (user.role === 'ADMIN') {
-          navigate('/admin/dashboard');
-        } else if (user.role === 'AGENTE') {
-          navigate('/agente/dashboard');
-        } else {
-          navigate('/dashboard');
-        }
+        const target = user.role === 'ADMIN'
+          ? '/admin/dashboard'
+          : user.role === 'AGENTE'
+            ? '/agente/dashboard'
+            : '/dashboard';
+        // Recarrega a aplicação para o AuthContext ler a sessão do localStorage
+        window.location.replace(target);
       } catch (e) {
         console.error('Erro ao parsear user:', e);
-        navigate('/login');
+        window.location.replace('/login');
       }
     } else {
-      navigate('/login');
+      window.location.replace('/login');
     }
-  }, [navigate]);
+  }, []);
 
   return (
     <div className="flex justify-center items-center h-screen">

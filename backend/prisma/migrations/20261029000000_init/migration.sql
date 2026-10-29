@@ -1,57 +1,5 @@
-/*
-  Warnings:
-
-  - You are about to drop the `Configuracao` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `ItemPedido` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Mesa` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Pedido` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Produto` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Reserva` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `TaxaFrete` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Usuario` table. If the table is not empty, all the data it contains will be lost.
-
-*/
--- DropForeignKey
-ALTER TABLE "ItemPedido" DROP CONSTRAINT "ItemPedido_pedidoId_fkey";
-
--- DropForeignKey
-ALTER TABLE "ItemPedido" DROP CONSTRAINT "ItemPedido_produtoId_fkey";
-
--- DropForeignKey
-ALTER TABLE "Pedido" DROP CONSTRAINT "Pedido_agenteId_fkey";
-
--- DropForeignKey
-ALTER TABLE "Pedido" DROP CONSTRAINT "Pedido_clienteId_fkey";
-
--- DropForeignKey
-ALTER TABLE "Reserva" DROP CONSTRAINT "Reserva_clienteId_fkey";
-
--- DropForeignKey
-ALTER TABLE "Reserva" DROP CONSTRAINT "Reserva_mesaId_fkey";
-
--- DropTable
-DROP TABLE "Configuracao";
-
--- DropTable
-DROP TABLE "ItemPedido";
-
--- DropTable
-DROP TABLE "Mesa";
-
--- DropTable
-DROP TABLE "Pedido";
-
--- DropTable
-DROP TABLE "Produto";
-
--- DropTable
-DROP TABLE "Reserva";
-
--- DropTable
-DROP TABLE "TaxaFrete";
-
--- DropTable
-DROP TABLE "Usuario";
+-- CreateEnum
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'CLIENTE', 'AGENTE');
 
 -- CreateTable
 CREATE TABLE "usuarios" (
@@ -119,10 +67,13 @@ CREATE TABLE "itens_pedido" (
 
 -- CreateTable
 CREATE TABLE "mesas" (
-    "id" INTEGER NOT NULL,
+    "id" SERIAL NOT NULL,
+    "numero" INTEGER NOT NULL,
     "qrCode" TEXT,
     "ocupada" BOOLEAN NOT NULL DEFAULT false,
     "pedidoAtualId" TEXT,
+    "createdAt" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(6) NOT NULL,
 
     CONSTRAINT "mesas_pkey" PRIMARY KEY ("id")
 );
@@ -135,7 +86,10 @@ CREATE TABLE "reservas" (
     "dataHora" TIMESTAMP(3) NOT NULL,
     "quantidadePessoas" INTEGER NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'PENDENTE',
+    "codigoRecibo" TEXT NOT NULL,
+    "observacoes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "reservas_pkey" PRIMARY KEY ("id")
 );
@@ -158,20 +112,38 @@ CREATE TABLE "configuracoes" (
     CONSTRAINT "configuracoes_pkey" PRIMARY KEY ("chave")
 );
 
+-- CreateTable
+CREATE TABLE "localizacoes_agente" (
+    "id" SERIAL NOT NULL,
+    "agenteId" INTEGER NOT NULL,
+    "latitude" DOUBLE PRECISION NOT NULL,
+    "longitude" DOUBLE PRECISION NOT NULL,
+    "endereco" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "localizacoes_agente_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "usuarios_email_key" ON "usuarios"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "mesas_numero_key" ON "mesas"("numero");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "mesas_qrCode_key" ON "mesas"("qrCode");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "reservas_codigoRecibo_key" ON "reservas"("codigoRecibo");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "taxas_frete_bairro_key" ON "taxas_frete"("bairro");
 
 -- AddForeignKey
-ALTER TABLE "pedidos" ADD CONSTRAINT "pedidos_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "pedidos" ADD CONSTRAINT "pedidos_agenteId_fkey" FOREIGN KEY ("agenteId") REFERENCES "usuarios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "pedidos" ADD CONSTRAINT "pedidos_agenteId_fkey" FOREIGN KEY ("agenteId") REFERENCES "usuarios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "pedidos" ADD CONSTRAINT "pedidos_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "itens_pedido" ADD CONSTRAINT "itens_pedido_pedidoId_fkey" FOREIGN KEY ("pedidoId") REFERENCES "pedidos"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -184,3 +156,7 @@ ALTER TABLE "reservas" ADD CONSTRAINT "reservas_clienteId_fkey" FOREIGN KEY ("cl
 
 -- AddForeignKey
 ALTER TABLE "reservas" ADD CONSTRAINT "reservas_mesaId_fkey" FOREIGN KEY ("mesaId") REFERENCES "mesas"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "localizacoes_agente" ADD CONSTRAINT "localizacoes_agente_agenteId_fkey" FOREIGN KEY ("agenteId") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+

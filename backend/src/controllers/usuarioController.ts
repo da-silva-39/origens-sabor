@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
+import { prisma } from '../config/prisma';
 
 // ==================== USUÁRIOS ====================
 export const listarUsuarios = async (req: Request, res: Response) => {
@@ -66,6 +64,14 @@ export const atualizarPerfil = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const { nome, email, telefone, endereco, dataNascimento } = req.body;
   try {
+    if (email) {
+      const emailEmUso = await prisma.usuario.findFirst({
+        where: { email, id: { not: userId } },
+      });
+      if (emailEmUso) {
+        return res.status(400).json({ error: 'Este email já está em uso' });
+      }
+    }
     const usuario = await prisma.usuario.update({
       where: { id: userId },
       data: {

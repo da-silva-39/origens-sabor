@@ -1,10 +1,10 @@
 import nodemailer from 'nodemailer';
-import { PedidoWhatsAppData } from './whatsappService'; // ou defina o tipo directamente
 
+const emailPort = Number(process.env.EMAIL_PORT);
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT),
-  secure: false, // true para 465
+  port: emailPort,
+  secure: emailPort === 465,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,

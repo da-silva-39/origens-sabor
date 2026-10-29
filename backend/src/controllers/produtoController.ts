@@ -1,8 +1,6 @@
 // backend/src/controllers/produtoController.ts
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../config/prisma';
 
 // Listar todos os produtos (público)
 export const listarProdutos = async (req: Request, res: Response) => {

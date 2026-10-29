@@ -1,37 +1,10 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { randomBytes } from 'crypto';
-
-const prisma = new PrismaClient();
+import { prisma } from '../config/prisma';
+import { enviarWhatsApp } from '../services/whatsappService';
 
 function gerarCodigoRecibo(): string {
   return randomBytes(8).toString('hex').toUpperCase();
-}
-
-// ==================== Função WhatsApp (local) ====================
-import twilio from 'twilio';
-const twilioClient = (() => {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  if (sid && token) return twilio(sid, token);
-  console.warn('Twilio não configurado');
-  return null;
-})();
-
-async function enviarWhatsApp(destino: string, mensagem: string): Promise<void> {
-  if (!twilioClient) return;
-  const from = process.env.TWILIO_WHATSAPP_NUMBER;
-  if (!from || !destino) return;
-  try {
-    await twilioClient.messages.create({
-      body: mensagem,
-      from: `whatsapp:${from}`,
-      to: `whatsapp:${destino}`,
-    });
-    console.log(`WhatsApp enviado para ${destino}`);
-  } catch (error) {
-    console.error(`Erro WhatsApp ${destino}:`, error);
-  }
 }
 
 // ==================== CRIAR RESERVA ====================

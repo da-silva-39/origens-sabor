@@ -10,6 +10,7 @@ interface User {
   role: string;
   telefone?: string;
   endereco?: string;
+  dataNascimento?: string | null;
   fotoUrl?: string;
   isOAuth?: boolean;
 }

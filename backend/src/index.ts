@@ -1,11 +1,10 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import session from 'express-session';
 import passport from 'passport';
 import path from 'path';
 import jwt from 'jsonwebtoken';
-import './config/passport';
+import { googleOAuthConfigured } from './config/passport';
 import authRoutes from './routes/authRoutes';
 import usuarioRoutes from './routes/usuarioRoutes';
 import pedidoRoutes from './routes/pedidoRoutes';
@@ -15,17 +14,19 @@ import reservaRoutes from './routes/reservaRoutes';
 import mesaRoutes from './routes/mesaRoutes';
 import adminMesaRoutes from './routes/adminMesaRoutes';
 
+const requiredEnv = ['DATABASE_URL', 'JWT_SECRET'];
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error(`Variaveis de ambiente em falta: ${missingEnv.join(', ')}`);
+  process.exit(1);
+}
 
-
-
-dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// 🔥 Permitir que o Express confie no proxy (Render, Heroku, etc.)
 app.set('trust proxy', 1);
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
 
 const allowedOrigins = [
   'http://localhost:5173',
@@ -45,14 +46,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use(session({
-  secret: process.env.JWT_SECRET!,
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: true, sameSite: 'lax' }, // 🔥 secure = true força cookies HTTPS
-}));
 app.use(passport.initialize());
-app.use(passport.session());
 app.use('/api/admin/mesas', adminMesaRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -66,39 +60,44 @@ app.use('/api/reservas', reservaRoutes);
 app.use('/api/mesas', mesaRoutes);
 
 
-app.get('/api/auth/google',
-  
-  passport.authenticate('google', { scope: ['profile', 'email'] })
-);
+if (googleOAuthConfigured) {
+  app.get('/api/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+  );
 
-app.get('/api/auth/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND_URL}/login` }),
-  (req, res) => {
-    const user = req.user as any;
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: '7d' }
-    );
-    const userData = encodeURIComponent(JSON.stringify({
-      id: user.id,
-      nome: user.nome,
-      email: user.email,
-      role: user.role,
-      telefone: user.telefone,
-      endereco: user.endereco,
-      fotoUrl: user.fotoUrl,
-      isOAuth: user.isOAuth
-    }));
-    res.redirect(`${FRONTEND_URL}/auth/google/callback?token=${token}&user=${userData}`);
-  }
-);
+  app.get('/api/auth/google/callback',
+    passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND_URL}/login` }),
+    (req, res) => {
+      const user = req.user as any;
+      const token = jwt.sign(
+        { id: user.id, role: user.role },
+        process.env.JWT_SECRET!,
+        { expiresIn: '7d' }
+      );
+      const userData = encodeURIComponent(JSON.stringify({
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        role: user.role,
+        telefone: user.telefone,
+        endereco: user.endereco,
+        dataNascimento: user.dataNascimento,
+        fotoUrl: user.fotoUrl,
+        isOAuth: user.isOAuth
+      }));
+      res.redirect(`${FRONTEND_URL}/auth/google/callback?token=${token}&user=${userData}`);
+    }
+  );
+} else {
+  app.get(['/api/auth/google', '/api/auth/google/callback'], (req, res) => {
+    res.status(503).json({ error: 'Login com Google não configurado' });
+  });
+}
 
 app.get('/', (req, res) => res.send('API OK'));
 
-app.listen(port, () => console.log(`Servidor na porta ${port}`));
-
-// Rota de saúde para monitorização
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
+
+app.listen(port, () => console.log(`Servidor na porta ${port}`));

@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { prisma } from '../config/prisma';
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
@@ -12,6 +11,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     const decoded = jwt.verify(token, JWT_SECRET) as { id: number; role: string };
     const user = await prisma.usuario.findUnique({ where: { id: decoded.id } });
     if (!user) return res.status(401).json({ error: 'Utilizador não encontrado' });
+    if (!user.ativo) return res.status(403).json({ error: 'Conta desativada' });
     (req as any).user = user;
     next();
   } catch (error) {
