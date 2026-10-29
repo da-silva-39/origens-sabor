@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
 import { pdf } from '@react-pdf/renderer';
@@ -24,7 +23,25 @@ export default function MinhasReservas() {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [carregando, setCarregando] = useState(true);
 
-  const fetchReservas = async () => {
+  const handleBaixarRecibo = useCallback(async (reserva: Reserva) => {
+    try {
+      const appUrl = ((import.meta as any).env?.VITE_APP_URL || window.location.origin).replace(/\/$/, '');
+      const qrData = `${appUrl}/reservas/validar/${reserva.id}?codigo=${reserva.codigoRecibo}`;
+      const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
+      const blob = await pdf(<ReciboReservaPDF reserva={reserva} qrDataUrl={qrDataUrl} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recibo_reserva_${reserva.codigoRecibo}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF. Verifique se os dados da reserva estão completos.');
+    }
+  }, []);
+
+  const fetchReservas = useCallback(async () => {
     try {
       const res = await api.get('/reservas/minhas');
       const novas = res.data;
@@ -70,13 +87,13 @@ export default function MinhasReservas() {
     } finally {
       setCarregando(false);
     }
-  };
+  }, [handleBaixarRecibo]);
 
   useEffect(() => {
     fetchReservas();
-    const interval = setInterval(fetchReservas, 10000); // polling a cada 10s
+    const interval = setInterval(fetchReservas, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchReservas]);
 
   const handleCancelar = async (id: number) => {
     if (!confirm('Tem certeza que deseja cancelar esta reserva?')) return;
@@ -89,25 +106,6 @@ export default function MinhasReservas() {
     }
   };
 
-  const handleBaixarRecibo = async (reserva: Reserva) => {
-    try {
-      const appUrl = ((import.meta as any).env?.VITE_APP_URL || window.location.origin).replace(/\/$/, '');
-      const qrData = `${appUrl}/reservas/validar/${reserva.id}?codigo=${reserva.codigoRecibo}`;
-      const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
-      const blob = await pdf(<ReciboReservaPDF reserva={reserva} qrDataUrl={qrDataUrl} />).toBlob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `recibo_reserva_${reserva.codigoRecibo}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      toast.error('Erro ao gerar PDF. Verifique se os dados da reserva estão completos.');
-    }
-  };
-
-  // Função de cores para status
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDENTE': return 'bg-yellow-100 text-yellow-800';

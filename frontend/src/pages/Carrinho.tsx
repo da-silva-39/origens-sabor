@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCartStore } from '../hooks/useCartStore';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiTrash2, FiShoppingCart } from 'react-icons/fi';
+import { FiTrash2, FiShoppingCart, FiImage } from 'react-icons/fi';
 
 export default function Carrinho() {
   const { items, updateQuantity, removeItem, getTotalPrice, getTotalItems } = useCartStore();
@@ -53,7 +52,9 @@ export default function Carrinho() {
                 {item.imagemUrl ? (
                   <img src={item.imagemUrl} alt={item.nome} className="w-16 h-16 object-cover rounded" />
                 ) : (
-                  <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-2xl">🍽️</div>
+                  <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400">
+                    <FiImage size={24} />
+                  </div>
                 )}
                 <div>
                   <h3 className="font-semibold text-gray-800">{item.nome}</h3>

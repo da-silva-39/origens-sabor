@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
-import { 
-  FiMapPin, FiPhone, FiMail, FiClock, FiSend, FiMessageSquare, 
-  FiFacebook, FiInstagram, FiSmartphone, FiCalendar, FiShoppingBag 
+import {
+  FiMapPin, FiPhone, FiMail, FiClock, FiSend, FiMessageSquare,
+  FiFacebook, FiInstagram, FiSmartphone, FiCalendar, FiShoppingBag,
+  FiClipboard, FiUser,
 } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 
@@ -279,13 +280,13 @@ Enviado através do formulário de contacto.`;
                       to="/minhas-reservas"
                       className="flex items-center gap-2 text-sm bg-primaria/10 text-primaria px-3 py-2 rounded-xl hover:bg-primaria/20 transition"
                     >
-                      📋 Minhas Reservas
+                      <FiClipboard /> Minhas Reservas
                     </Link>
                     <Link
                       to="/perfil"
                       className="flex items-center gap-2 text-sm bg-primaria/10 text-primaria px-3 py-2 rounded-xl hover:bg-primaria/20 transition"
                     >
-                      👤 Meu Perfil
+                      <FiUser /> Meu Perfil
                     </Link>
                   </>
                 )}

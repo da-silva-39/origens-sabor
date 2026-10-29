@@ -1,7 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { FaInstagram, FaFacebook, FaWhatsapp, FaArrowUp } from 'react-icons/fa';
-import { FiMapPin, FiPhone, FiMail, FiClock } from 'react-icons/fi';
+import {
+  FiMapPin,
+  FiPhone,
+  FiMail,
+  FiClock,
+  FiBookOpen,
+  FiCalendar,
+  FiClipboard,
+  FiUser,
+} from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Footer() {
@@ -72,7 +80,7 @@ export default function Footer() {
                   onClick={() => handleProtectedClick('/cardapio')}
                   className="hover:text-white transition-colors flex items-center gap-2 w-full text-left cursor-pointer"
                 >
-                  🍽️ Cardápio
+                  <FiBookOpen /> Cardápio
                 </button>
               </li>
               <li>
@@ -80,7 +88,7 @@ export default function Footer() {
                   onClick={() => handleProtectedClick('/reservar-mesa')}
                   className="hover:text-white transition-colors flex items-center gap-2 w-full text-left cursor-pointer"
                 >
-                  📅 Reservar Mesa
+                  <FiCalendar /> Reservar Mesa
                 </button>
               </li>
               <li>
@@ -88,7 +96,7 @@ export default function Footer() {
                   onClick={() => handleProtectedClick('/minhas-reservas')}
                   className="hover:text-white transition-colors flex items-center gap-2 w-full text-left cursor-pointer"
                 >
-                  📋 Minhas Reservas
+                  <FiClipboard /> Minhas Reservas
                 </button>
               </li>
               <li>
@@ -96,7 +104,7 @@ export default function Footer() {
                   onClick={() => handleProtectedClick('/perfil')}
                   className="hover:text-white transition-colors flex items-center gap-2 w-full text-left cursor-pointer"
                 >
-                  👤 Meu Perfil
+                  <FiUser /> Meu Perfil
                 </button>
               </li>
             </ul>
@@ -161,7 +169,7 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Origens do Sabor – Todos os direitos reservados.
           </p>
           <p className="text-center">
-            Desenvolvido com por <strong className="text-yellow">Jose Da Silva</strong> <a href="https://wa.me/258855712857" className="text-white hover:underline">+258 85 57 12 857</a>
+            Desenvolvido por <strong className="text-yellow">Jose Da Silva</strong> <a href="https://wa.me/258855712857" className="text-white hover:underline">+258 85 57 12 857</a>
           </p>
         </div>
       </div>

@@ -1,13 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { useCartStore } from '../hooks/useCartStore';
 import { toast } from 'react-hot-toast';
-import { FiSearch, FiFilter, FiX, FiShoppingCart } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiX, FiShoppingCart, FiImage } from 'react-icons/fi';
 
 interface Produto {
   id: number;
@@ -44,7 +42,7 @@ export default function Cardapio() {
           setProdutos(data);
           const cats = [...new Set(data.map(p => p.categoria))];
           setCategorias(cats);
-        } catch (error) {
+        } catch {
           toast.error('Erro ao carregar cardápio');
         } finally {
           setCarregandoProdutos(false);
@@ -238,7 +236,9 @@ export default function Cardapio() {
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">🍽️</div>
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            <FiImage size={40} />
+                          </div>
                         )}
                       </div>
                       <div className="p-5">
@@ -264,28 +264,6 @@ export default function Cardapio() {
         )}
       </div>
 
-      <style>{`
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .animate-enter {
-          animation: slideInUp 0.3s ease-out;
-        }
-        .animate-leave {
-          animation: slideOutDown 0.2s ease-in;
-        }
-        @keyframes slideInUp {
-          from { transform: translateY(100%); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes slideOutDown {
-          from { transform: translateY(0); opacity: 1; }
-          to { transform: translateY(100%); opacity: 0; }
-        }
-      `}</style>
     </div>
   );
 }

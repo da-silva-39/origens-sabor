@@ -137,22 +137,6 @@ export const uploadFoto = async (req: Request, res: Response) => {
   }
 };
 
-// ==================== LISTAR POR ROLE ====================
-export const listarUsuariosPorRole = async (req: Request, res: Response) => {
-  const { role } = req.query;
-  try {
-    const usuarios = await prisma.usuario.findMany({
-      where: { role: role as any, ativo: true },
-      select: { id: true, nome: true, email: true, telefone: true, role: true },
-    });
-    res.json(usuarios);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao listar usuários' });
-  }
-};
-
-// ==================== LOCALIZAÇÃO DE AGENTES ====================
 export const guardarLocalizacaoAgente = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const { latitude, longitude, endereco } = req.body;
@@ -191,14 +175,5 @@ export const obterUltimaLocalizacaoAgente = async (req: Request, res: Response) 
   } catch (error) {
     console.error('Erro ao buscar localização:', error);
     res.status(500).json({ error: 'Erro interno ao buscar localização' });
-  }
-};
-
-export const listarMesas = async (req: Request, res: Response) => {
-  try {
-    const mesas = await prisma.mesa.findMany();
-    res.json(mesas);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao listar mesas' });
   }
 };

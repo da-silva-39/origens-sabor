@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
 // Cores institucionais

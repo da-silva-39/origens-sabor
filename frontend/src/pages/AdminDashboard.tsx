@@ -1,10 +1,17 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
+import {
+  FiUsers,
+  FiShoppingBag,
+  FiPackage,
+  FiDollarSign,
+  FiCalendar,
+  FiGrid,
+} from 'react-icons/fi';
 
 interface Stats {
   totalUsuarios: number;
@@ -35,7 +42,10 @@ export default function AdminDashboard() {
           const usuarios = usuariosRes.data;
           const produtos = produtosRes.data;
           const pedidos = pedidosRes.data;
-          const receita = pedidos.reduce((acc: number, p: any) => acc + (p.total || 0), 0);
+          const receita = pedidos.reduce(
+            (acc: number, pedido: { total?: number | null }) => acc + (pedido.total ?? 0),
+            0
+          );
           setStats({
             totalUsuarios: usuarios.length,
             totalProdutos: produtos.length,
@@ -74,29 +84,29 @@ export default function AdminDashboard() {
             Painel Administrativo
           </h1>
           <p className="text-gray-600 mt-2">
-            Bem‑vindo, {user?.nome}! Aqui pode gerir todo o sistema.
+            Bem-vindo, {user?.nome}! Aqui pode gerir todo o sistema.
           </p>
         </div>
 
         {/* Estatísticas reais */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-lg transition">
-            <div className="text-4xl mb-2">👥</div>
+            <FiUsers className="mx-auto mb-2 text-primaria" size={32} />
             <div className="text-2xl font-bold text-primaria">{stats.totalUsuarios}</div>
             <div className="text-gray-600">Utilizadores</div>
           </div>
           <div className="bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-lg transition">
-            <div className="text-4xl mb-2">🍽️</div>
+            <FiShoppingBag className="mx-auto mb-2 text-primaria" size={32} />
             <div className="text-2xl font-bold text-primaria">{stats.totalProdutos}</div>
             <div className="text-gray-600">Produtos</div>
           </div>
           <div className="bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-lg transition">
-            <div className="text-4xl mb-2">📦</div>
+            <FiPackage className="mx-auto mb-2 text-primaria" size={32} />
             <div className="text-2xl font-bold text-primaria">{stats.totalPedidos}</div>
             <div className="text-gray-600">Pedidos</div>
           </div>
           <div className="bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-lg transition">
-            <div className="text-4xl mb-2">💰</div>
+            <FiDollarSign className="mx-auto mb-2 text-primaria" size={32} />
             <div className="text-2xl font-bold text-primaria">{stats.receitaTotal.toFixed(2)} MT</div>
             <div className="text-gray-600">Receita total</div>
           </div>
@@ -108,7 +118,7 @@ export default function AdminDashboard() {
             to="/admin/usuarios"
             className="group bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-xl transition transform hover:-translate-y-1"
           >
-            <div className="text-5xl mb-2">👥</div>
+            <FiUsers className="mx-auto mb-3 text-primaria" size={40} />
             <h2 className="text-xl font-semibold text-secundaria">Utilizadores</h2>
             <p className="text-gray-600 mt-1">Gerir clientes e agentes</p>
           </Link>
@@ -116,7 +126,7 @@ export default function AdminDashboard() {
             to="/admin/produtos"
             className="group bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-xl transition transform hover:-translate-y-1"
           >
-            <div className="text-5xl mb-2">🍽️</div>
+            <FiShoppingBag className="mx-auto mb-3 text-primaria" size={40} />
             <h2 className="text-xl font-semibold text-secundaria">Produtos</h2>
             <p className="text-gray-600 mt-1">Adicionar, editar ou remover itens</p>
           </Link>
@@ -124,7 +134,7 @@ export default function AdminDashboard() {
             to="/admin/pedidos"
             className="group bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-xl transition transform hover:-translate-y-1"
           >
-            <div className="text-5xl mb-2">📦</div>
+            <FiPackage className="mx-auto mb-3 text-primaria" size={40} />
             <h2 className="text-xl font-semibold text-secundaria">Pedidos</h2>
             <p className="text-gray-600 mt-1">Acompanhar e actualizar status</p>
           </Link>
@@ -133,7 +143,7 @@ export default function AdminDashboard() {
             to="/admin/reservas"
             className="group bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-xl transition transform hover:-translate-y-1"
           >
-            <div className="text-5xl mb-2">📅</div>
+            <FiCalendar className="mx-auto mb-3 text-primaria" size={40} />
             <h2 className="text-xl font-semibold text-secundaria">Reservas</h2>
             <p className="text-gray-600 mt-1">Gerir pedidos de reserva de mesas</p>
           </Link>
@@ -141,7 +151,7 @@ export default function AdminDashboard() {
             to="/admin/mesas"
             className="group bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-xl transition transform hover:-translate-y-1"
           >
-            <div className="text-5xl mb-2">🪑</div>
+            <FiGrid className="mx-auto mb-3 text-primaria" size={40} />
             <h2 className="text-xl font-semibold text-secundaria">Mesas</h2>
             <p className="text-gray-600 mt-1">CRUD de mesas e QR codes</p>
           </Link>

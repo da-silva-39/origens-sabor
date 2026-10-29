@@ -1,19 +1,20 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { FaWhatsapp, FaInstagram, FaFacebook } from "react-icons/fa";
+import { FiPhone, FiMail, FiMapPin, FiClock } from "react-icons/fi";
+
+const slides = [
+  { src: "https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?w=1200", alt: "Ambiente", title: "Bem-vindo ao Origens do Sabor", desc: "Restaurante e Bar Origens do Sabor." },
+  { src: "/pizza cliente.jpg", alt: "Pratos", title: "Visite-nos", desc: "Abertos de segunda a domingo, nos horários abaixo." },
+  { src: "/prato apresentacao 2.jpg", alt: "Chef", title: "Culinária de autor", desc: "Preparado com muito carinho." },
+  { src: "/contacto.jpg", alt: "Momentos", title: "Experiência inesquecível", desc: "Acompanhamos os seus momentos especiais." },
+];
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
-
-  const slides = [
-    { src: "https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?w=1200", alt: "Ambiente", title: "Bem-vindo ao Origens do Sabor", desc: "Restaurante e Bar Origens do Sabor." },
-    { src: "/pizza cliente.jpg", alt: "Pratos", title: "Visite-nos", desc: "Abertos de segunda a domingo, nos horarios abaixo." },
-    { src: "/prato apresentacao 2.jpg", alt: "Chef", title: "Culinária de autor", desc: "Preparado com muito carinho." },
-    { src: "/contacto.jpg", alt: "Momentos", title: "Experiência inesquecível", desc: "Acompanhamos os seus momentos especiais." },
-  ];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -84,7 +85,7 @@ export default function Home() {
         {isAuthenticated && (
           <div className="bg-gradient-to-r from-primaria to-secundaria text-white py-6">
             <div className="container-custom text-center">
-              <h2 className="text-2xl md:text-3xl font-bold mb-2">Bem‑vindo de volta, {user?.nome?.split(' ')[0]}! </h2>
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">Bem-vindo de volta, {user?.nome?.split(' ')[0]}!</h2>
               <div className="flex flex-wrap justify-center gap-3">
                 <button onClick={() => navigate("/cardapio")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">Explorar Cardápio</button>
                 <button onClick={() => navigate("/reservar-mesa")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">Reservar Mesa</button>
@@ -197,7 +198,7 @@ export default function Home() {
           <div className="container-custom grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-secundaria mb-6">Feedback sobre o restaurante</h2>
-              <p className="text-gray-700 text-lg mb-6">Há mais de 2 anos, o Origens do Sabor tem atuado em chimoio com o propósito de trazer à mesa o melhor da gastronomia.</p>
+              <p className="text-gray-700 text-lg mb-6">Há mais de 2 anos, o Origens do Sabor tem atuado em Chimoio com o propósito de trazer à mesa o melhor da gastronomia.</p>
               <p className="text-gray-700 text-lg mb-6">Localizado no centro de Chimoio, referenciamos a qualidade, atendimento e criatividade, tanto quanto entregas. Cada prato é preparado com ingredientes frescos e de qualidade.</p>
             </div>
             <div className="relative h-80 rounded-2xl overflow-hidden shadow-xl">
@@ -214,30 +215,46 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
               <div>
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2">📞 Telefone / WhatsApp</h3>
+                  <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                    <FiPhone className="text-primaria" /> Telefone / WhatsApp
+                  </h3>
                   <p className="text-gray-700">+258 84 842 4621</p>
                   <p className="text-gray-700">+258 86 015 1122</p>
-                  <a href="https://wa.me/258860151122" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 bg-[#25D366] text-white px-4 py-2 rounded-full hover:bg-[#128C7E] transition">💬 Falar no WhatsApp</a>
+                  <a href="https://wa.me/258860151122" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 bg-[#25D366] text-white px-4 py-2 rounded-full hover:bg-[#128C7E] transition">
+                    <FaWhatsapp /> Falar no WhatsApp
+                  </a>
                 </div>
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2">✉️ E-mail</h3>
+                  <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                    <FiMail className="text-primaria" /> E-mail
+                  </h3>
                   <p className="text-gray-700">origensdosabor@gmail.com</p>
                 </div>
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2">📍 Endereço</h3>
+                  <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                    <FiMapPin className="text-primaria" /> Endereço
+                  </h3>
                   <p className="text-gray-700">Rua Cidade de Lichinga, em frente ao Tribunal Judicial,<br />Chimoio, Moçambique</p>
                 </div>
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2">🕒 Horário</h3>
+                  <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                    <FiClock className="text-primaria" /> Horário
+                  </h3>
                   <p className="text-gray-700">Segunda a Sábado: 07:30 - 22h</p>
                   <p className="text-gray-700">Domingo: 09h - 22h</p>
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">📱 Siga-nos</h3>
+                  <h3 className="text-xl font-semibold mb-2">Siga-nos</h3>
                   <div className="flex flex-wrap gap-4">
-                    <a href="https://www.instagram.com/origens_do_sabor_restaurante_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCAF45] hover:opacity-90 transition">📷 Instagram</a>
-                    <a href="https://web.facebook.com/p/Origens-do-sabor-61572114920143" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#1877F2] hover:bg-[#0E5A9E] transition">📘 Facebook</a>
-                    <a href="https://wa.me/258860151122" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#25D366] hover:bg-[#128C7E] transition">💬 WhatsApp</a>
+                    <a href="https://www.instagram.com/origens_do_sabor_restaurante_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCAF45] hover:opacity-90 transition">
+                      <FaInstagram /> Instagram
+                    </a>
+                    <a href="https://web.facebook.com/p/Origens-do-sabor-61572114920143" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#1877F2] hover:bg-[#0E5A9E] transition">
+                      <FaFacebook /> Facebook
+                    </a>
+                    <a href="https://wa.me/258860151122" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#25D366] hover:bg-[#128C7E] transition">
+                      <FaWhatsapp /> WhatsApp
+                    </a>
                   </div>
                 </div>
               </div>

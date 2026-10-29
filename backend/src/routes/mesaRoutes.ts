@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import { listarMesas } from '../controllers/usuarioController';
+import { listarMesas } from '../controllers/mesaController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// Todas as rotas exigem autenticação
 router.use(authMiddleware);
 
 router.get('/', listarMesas);

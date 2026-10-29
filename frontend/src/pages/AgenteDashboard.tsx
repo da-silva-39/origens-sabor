@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -6,7 +5,14 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
-import { FiMapPin, FiPackage, FiNavigation } from 'react-icons/fi';
+import {
+  FiMapPin,
+  FiPackage,
+  FiNavigation,
+  FiAlertTriangle,
+  FiWifi,
+  FiMap,
+} from 'react-icons/fi';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -73,6 +79,7 @@ export default function AgenteDashboard() {
   const [enderecoAtual, setEnderecoAtual] = useState<string>('');
   const [carregandoEndereco, setCarregandoEndereco] = useState(false);
   const lastCoordsRef = useRef<{ lat: number; lng: number; endereco: string } | null>(null);
+  const notificacaoPedidosRef = useRef(false);
 
   // Geolocalização
   useEffect(() => {
@@ -129,7 +136,10 @@ export default function AgenteDashboard() {
         try {
           const res = await api.get('/pedidos/agente');
           setPedidos(res.data);
-          if (res.data.length > 0 && pedidos.length === 0) toast.success(`Você tem ${res.data.length} pedido(s) para entregar!`);
+          if (res.data.length > 0 && !notificacaoPedidosRef.current) {
+            notificacaoPedidosRef.current = true;
+            toast.success(`Tem ${res.data.length} pedido(s) para entregar.`);
+          }
         } catch (error) { console.error(error); }
         finally { setCarregandoPedidos(false); }
       };
@@ -180,25 +190,31 @@ export default function AgenteDashboard() {
         <div className="bg-white rounded-2xl shadow-md p-5 mb-6 border-l-8 border-primaria">
           <div className="flex items-center gap-3 mb-2">
             <FiNavigation className="text-primaria text-2xl" />
-            <h2 className="text-xl font-semibold text-gray-800">📍 Onde estou agora</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Onde estou agora</h2>
           </div>
           {geoLoading && <p className="text-gray-500">A obter localização...</p>}
-          {geoError && <p className="text-red-500">⚠️ {geoError}</p>}
+          {geoError && (
+            <p className="text-red-500 flex items-center gap-2">
+              <FiAlertTriangle /> {geoError}
+            </p>
+          )}
           {location && (
             <>
               <p className="text-gray-700 text-lg font-medium">
                 {carregandoEndereco ? 'A identificar local...' : enderecoAtual}
               </p>
               <p className="text-xs text-gray-400">Atualização dinâmica a cada 15s ou ao se movimentar.</p>
-              <p className="text-xs text-green-600 mt-1">
-                📡 Localização partilhada com o administrador em tempo real
+              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                <FiWifi /> Localização partilhada com o administrador em tempo real
               </p>
             </>
           )}
         </div>
 
         <div className="bg-white rounded-2xl shadow-md p-2 mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 px-3 pt-3">🗺️ Mapa da minha localização</h2>
+          <h2 className="text-xl font-semibold text-gray-800 px-3 pt-3 flex items-center gap-2">
+            <FiMap /> Mapa da minha localização
+          </h2>
           <div style={{ height: '400px', width: '100%', borderRadius: '12px', overflow: 'hidden' }}>
             {location ? (
               <MapContainer center={[location.lat, location.lng]} zoom={15} style={{ height: '100%', width: '100%' }}>

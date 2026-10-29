@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -28,7 +28,7 @@ export default function AdminMonitorarAgente() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
 
-  const fetchLocalizacao = async () => {
+  const fetchLocalizacao = useCallback(async () => {
     try {
       const res = await api.get(`/usuarios/admin/agente/${id}/localizacao`);
       setLocalizacao(res.data);
@@ -42,13 +42,13 @@ export default function AdminMonitorarAgente() {
     } finally {
       setCarregando(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchLocalizacao();
-    const interval = setInterval(fetchLocalizacao, 10000); // actualiza a cada 10s
+    const interval = setInterval(fetchLocalizacao, 10000);
     return () => clearInterval(interval);
-  }, [id]);
+  }, [fetchLocalizacao]);
 
   if (carregando) return <div className="p-8 text-center">A carregar localização...</div>;
   if (erro) return <div className="p-8 text-center text-red-600">{erro}</div>;

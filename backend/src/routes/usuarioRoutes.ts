@@ -12,29 +12,25 @@ import {
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { adminMiddleware } from '../middlewares/adminMiddleware';
 import { roleMiddleware } from '../middlewares/roleMiddleware';
-import upload from '../middlewares/upload';
+import { uploadProfile } from '../config/cloudinary';
 
 const router = Router();
 
-router.use(authMiddleware); // todas as rotas exigem autenticação
+router.use(authMiddleware);
 
-// Rotas existentes
 router.get('/', adminMiddleware, listarUsuarios);
 router.post('/', adminMiddleware, criarUsuario);
 router.patch('/:id/toggle', adminMiddleware, toggleUsuarioAtivo);
 router.put('/perfil', atualizarPerfil);
 router.put('/alterar-senha', alterarSenha);
-router.post('/upload-foto', upload.single('foto'), uploadFoto);
+router.post('/upload-foto', uploadProfile.single('foto'), uploadFoto);
 
-// NOVAS ROTAS
-// Agente envia localização periódica
 router.post(
   '/agente/localizacao',
   roleMiddleware(['AGENTE']),
   guardarLocalizacaoAgente
 );
 
-// Admin consulta última localização de um agente
 router.get(
   '/admin/agente/:id/localizacao',
   adminMiddleware,

@@ -1,20 +1,18 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/prisma';
 
-// Listar todas as mesas
-export const listarMesas = async (req: Request, res: Response) => {
+export const listarMesas = async (_req: Request, res: Response) => {
   try {
     const mesas = await prisma.mesa.findMany({
       orderBy: { numero: 'asc' },
     });
-    res.json(mesas); // já inclui ocupada
+    res.json(mesas);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro ao listar mesas' });
   }
 };
 
-// Criar nova mesa
 export const criarMesa = async (req: Request, res: Response) => {
   const { numero, ocupada } = req.body;
   if (!numero) {
@@ -25,13 +23,10 @@ export const criarMesa = async (req: Request, res: Response) => {
     if (existente) {
       return res.status(409).json({ error: 'Já existe uma mesa com este número' });
     }
-    // O campo id é auto-increment (deve ter @default(autoincrement()) no schema)
-    // qrCode não é enviado – será NULL por padrão (se a coluna existir)
     const novaMesa = await prisma.mesa.create({
       data: {
         numero,
         ocupada: ocupada ?? false,
-        // qrCode não é necessário; se quiser pode usar undefined
       },
     });
     res.status(201).json(novaMesa);
@@ -41,7 +36,6 @@ export const criarMesa = async (req: Request, res: Response) => {
   }
 };
 
-// Atualizar mesa
 export const atualizarMesa = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { numero, ocupada } = req.body;

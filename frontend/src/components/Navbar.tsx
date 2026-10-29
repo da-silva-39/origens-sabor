@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
@@ -40,8 +39,7 @@ export default function Navbar() {
 
           {isAuthenticated ? (
             <>
-              {/* Cardápio: para admin mostra versão sem carrinho */}
-              <Link to={isAdmin ? "/admin/cardapio" : "/cardapio"} className={linkDesktop}>
+              <Link to="/cardapio" className={linkDesktop}>
                 Cardápio
               </Link>
 
@@ -104,7 +102,7 @@ export default function Navbar() {
           )}
           {isAuthenticated ? (
             <>
-              <Link to={isAdmin ? "/admin/cardapio" : "/cardapio"} onClick={fecharMenu} className={linkMobile}>
+              <Link to="/cardapio" onClick={fecharMenu} className={linkMobile}>
                 Cardápio
               </Link>
               {isCliente && (
