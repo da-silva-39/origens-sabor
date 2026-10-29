@@ -1,15 +1,6 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-const emailPort = Number(process.env.EMAIL_PORT);
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: emailPort,
-  secure: emailPort === 465,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export interface PedidoEmailData {
   id: number;
@@ -57,8 +48,8 @@ export async function sendPedidoEmail(pedido: PedidoEmailData): Promise<void> {
   `;
 
   try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'Origens do Sabor <onboarding@resend.dev>',
       to,
       subject: `Novo Pedido #${pedido.id}`,
       html,
