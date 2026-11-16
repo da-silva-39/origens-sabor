@@ -10,8 +10,6 @@ import {
   FiMapPin,
   FiPhone,
   FiArrowUpRight,
-  FiPause,
-  FiPlay,
 } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import api from "../services/api";
@@ -73,18 +71,13 @@ export default function Home() {
   );
   const [destaques, setDestaques] = useState<Produto[]>([]);
   const [slideAtivo, setSlideAtivo] = useState(0);
-  const [pausado, setPausado] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
+
   useEffect(() => {
-    if (pausado) return;
     const temporizador = window.setTimeout(() => {
       setSlideAtivo((atual) => (atual + 1) % HERO_SLIDES.length);
     }, 3000);
     return () => window.clearTimeout(temporizador);
-  }, [slideAtivo, pausado]);
+  }, [slideAtivo]);
 
   useEffect(() => {
     let ativo = true;
@@ -203,14 +196,6 @@ export default function Home() {
               <FiChevronRight aria-hidden="true" />
             </button>
 
-            <button
-              type="button"
-              onClick={() => setPausado((valor) => !valor)}
-              aria-label={pausado ? "Iniciar apresentação automática" : "Pausar apresentação automática"}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-creme/30 bg-secundaria/40 text-creme backdrop-blur transition-colors hover:border-creme hover:bg-creme hover:text-secundaria"
-            >
-              {pausado ? <FiPlay aria-hidden="true" /> : <FiPause aria-hidden="true" />}
-            </button>
           </div>
         </div>
 

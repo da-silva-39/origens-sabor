@@ -1,13 +1,26 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
 import { pdf } from '@react-pdf/renderer';
 import QRCode from 'qrcode';
 import { ReciboReservaPDF } from '../components/ReciboReservaPDF';
-import { FiCalendar, FiCheckCircle, FiDownload, FiPlus, FiX } from 'react-icons/fi';
+import ContaHeader from '../components/ContaHeader';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { RESTAURANTE } from '../data/restaurante';
+import {
+  FiArrowRight,
+  FiCalendar,
+  FiCheckCircle,
+  FiClock,
+  FiDownload,
+  FiHash,
+  FiPlus,
+  FiUsers,
+  FiX,
+} from 'react-icons/fi';
 
 interface Reserva {
   id: number;
@@ -20,19 +33,40 @@ interface Reserva {
   observacoes?: string;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  PENDENTE: 'Pendente',
-  CONFIRMADA: 'Confirmada',
-  CANCELADA: 'Cancelada',
+const STATUS_ESTILO: Record<string, { rotulo: string; chip: string; barra: string }> = {
+  PENDENTE: {
+    rotulo: 'Pendente',
+    chip: 'bg-dourado/15 text-[#8a6a34]',
+    barra: 'bg-dourado',
+  },
+  CONFIRMADA: {
+    rotulo: 'Confirmada',
+    chip: 'bg-oliva/15 text-oliva',
+    barra: 'bg-oliva',
+  },
+  CANCELADA: {
+    rotulo: 'Cancelada',
+    chip: 'bg-red-50 text-red-700',
+    barra: 'bg-red-400',
+  },
 };
 
-const STATUS_COR: Record<string, string> = {
-  PENDENTE: 'bg-dourado/15 text-[#8a6a34]',
-  CONFIRMADA: 'bg-oliva/15 text-oliva',
-  CANCELADA: 'bg-red-100 text-red-700',
-};
+function partesData(valor: string) {
+  const data = new Date(valor);
+  return {
+    dia: new Intl.DateTimeFormat('pt-PT', { day: '2-digit' }).format(data),
+    mes: new Intl.DateTimeFormat('pt-PT', { month: 'short' })
+      .format(data)
+      .replace('.', ''),
+    completo: new Intl.DateTimeFormat('pt-PT', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+    }).format(data),
+  };
+}
 
 export default function MinhasReservas() {
+  useDocumentTitle('Minhas reservas — Origens do Sabor');
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -66,7 +100,7 @@ export default function MinhasReservas() {
             toast.custom(
               (t) => (
                 <div
-                  className={`w-full max-w-md rounded-lg border-l-4 border-oliva bg-white p-4 shadow-lg ${
+                  className={`w-full max-w-md border-l-4 border-oliva bg-white p-4 shadow-lg ${
                     t.visible ? 'animate-enter' : 'animate-leave'
                   }`}
                 >
@@ -120,7 +154,7 @@ export default function MinhasReservas() {
   }, [fetchReservas]);
 
   const handleCancelar = async (id: number) => {
-    if (!confirm('Tem certeza que deseja cancelar esta reserva?')) return;
+    if (!window.confirm('Tem certeza que deseja cancelar esta reserva?')) return;
     try {
       await api.delete(`/reservas/${id}`);
       toast.success('Reserva cancelada');
@@ -130,105 +164,201 @@ export default function MinhasReservas() {
     }
   };
 
+  const estatisticas = useMemo(
+    () => ({
+      total: reservas.length,
+      confirmadas: reservas.filter((r) => r.status === 'CONFIRMADA').length,
+      pendentes: reservas.filter((r) => r.status === 'PENDENTE').length,
+    }),
+    [reservas]
+  );
+
   if (carregando) {
     return (
-      <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primaria" />
+      <div className="flex h-96 items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primaria" />
       </div>
     );
   }
 
   return (
-    <section className="section">
-      <div className="container-custom max-w-4xl">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow">A sua conta</p>
-            <h1 className="mt-2 font-display text-3xl text-secundaria sm:text-4xl">
-              Minhas reservas
-            </h1>
-            <p className="mt-2 text-sm text-texto/60">
-              Acompanhe o estado das suas reservas e apresente o recibo à chegada.
-            </p>
-          </div>
-          <Link to="/reservar-mesa" className="btn-primary btn-sm">
+    <div className="bg-fundo">
+      <ContaHeader
+        eyebrow="A sua conta"
+        titulo="Minhas reservas"
+        descricao="Acompanhe o estado das suas reservas, apresente o recibo à chegada e reserve uma nova mesa quando quiser."
+        acao={
+          <Link to="/reservar-mesa" className="btn-light">
             <FiPlus aria-hidden="true" /> Nova reserva
           </Link>
+        }
+      />
+
+      <div className="container-custom max-w-5xl py-10">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="border border-carvao/10 bg-white p-5">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center bg-secundaria/10 text-secundaria">
+                <FiCalendar aria-hidden="true" />
+              </span>
+              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-carvao/50">
+                Reservas
+              </span>
+            </div>
+            <p className="mt-4 font-display text-3xl text-secundaria">{estatisticas.total}</p>
+            <p className="mt-1 text-xs text-carvao/50">Total de reservas efetuadas</p>
+          </div>
+
+          <div className="border border-carvao/10 bg-white p-5">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center bg-oliva/15 text-oliva">
+                <FiCheckCircle aria-hidden="true" />
+              </span>
+              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-carvao/50">
+                Confirmadas
+              </span>
+            </div>
+            <p className="mt-4 font-display text-3xl text-secundaria">
+              {estatisticas.confirmadas}
+            </p>
+            <p className="mt-1 text-xs text-carvao/50">Mesas já confirmadas pela equipa</p>
+          </div>
+
+          <div className="border border-carvao/10 bg-white p-5">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center bg-dourado/15 text-[#8a6a34]">
+                <FiClock aria-hidden="true" />
+              </span>
+              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-carvao/50">
+                Pendentes
+              </span>
+            </div>
+            <p className="mt-4 font-display text-3xl text-secundaria">
+              {estatisticas.pendentes}
+            </p>
+            <p className="mt-1 text-xs text-carvao/50">A aguardar confirmação</p>
+          </div>
         </div>
 
         {reservas.length === 0 ? (
-          <div className="card mt-8 p-12 text-center">
-            <FiCalendar className="mx-auto text-4xl text-primaria" aria-hidden="true" />
-            <p className="mt-4 font-display text-xl text-secundaria">Ainda não tem reservas</p>
-            <p className="mt-1 text-sm text-texto/60">
-              Reserve uma mesa e garanta o seu lugar no Origens do Sabor.
+          <div className="mt-8 border border-carvao/10 bg-white p-10 text-center sm:p-14">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center bg-areia/50 text-terracota">
+              <FiCalendar aria-hidden="true" className="h-7 w-7" />
+            </span>
+            <p className="mt-5 font-display text-2xl text-secundaria">
+              Ainda não tem reservas
+            </p>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-carvao/55">
+              Reserve uma mesa e garanta o seu lugar. Receberá aqui a confirmação e o
+              recibo para apresentar à chegada.
             </p>
             <Link to="/reservar-mesa" className="btn-primary mt-6">
-              Reservar mesa
+              Reservar mesa <FiArrowRight aria-hidden="true" />
             </Link>
           </div>
         ) : (
           <div className="mt-8 space-y-4">
-            {reservas.map((r) => (
-              <article
-                key={r.id}
-                className="rounded-sm border border-texto/10 bg-white p-5 shadow-suave sm:p-6"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h2 className="font-display text-xl text-secundaria">Mesa {r.mesa.numero}</h2>
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${
-                          STATUS_COR[r.status] || 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        {STATUS_LABEL[r.status] || r.status}
+            {reservas.map((reserva) => {
+              const estilo = STATUS_ESTILO[reserva.status] || {
+                rotulo: reserva.status,
+                chip: 'bg-carvao/5 text-carvao/70',
+                barra: 'bg-carvao/30',
+              };
+              const data = partesData(reserva.dataHora);
+
+              return (
+                <article
+                  key={reserva.id}
+                  className="relative overflow-hidden border border-carvao/10 bg-white"
+                >
+                  <span className={`absolute inset-y-0 left-0 w-1 ${estilo.barra}`} />
+
+                  <div className="grid gap-5 p-5 pl-6 sm:grid-cols-[5.5rem_1fr_auto] sm:items-start sm:p-6 sm:pl-7">
+                    <div className="flex h-20 w-20 flex-col items-center justify-center border border-carvao/10 bg-areia/30">
+                      <span className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-carvao/50">
+                        {data.mes}
+                      </span>
+                      <span className="font-display text-3xl leading-none text-secundaria">
+                        {data.dia}
                       </span>
                     </div>
-                    <p className="mt-2 text-sm text-texto/70">
-                      {new Date(r.dataHora).toLocaleString('pt-PT', {
-                        dateStyle: 'long',
-                        timeStyle: 'short',
-                      })}
-                      {' · '}
-                      {r.quantidadePessoas} {r.quantidadePessoas === 1 ? 'pessoa' : 'pessoas'}
-                    </p>
-                    <p className="mt-1 text-xs text-texto/45">
-                      Código de validação: <span className="font-mono">{r.codigoRecibo}</span>
-                    </p>
-                    {r.observacoes && (
-                      <p className="mt-3 rounded-sm bg-areia/60 px-3 py-2 text-sm text-texto/70">
-                        {r.observacoes}
-                      </p>
-                    )}
+
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h2 className="font-display text-xl text-secundaria">
+                          Mesa {reserva.mesa.numero}
+                        </h2>
+                        <span
+                          className={`inline-flex px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wider ${estilo.chip}`}
+                        >
+                          {estilo.rotulo}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex flex-col gap-2 text-sm text-carvao/65">
+                        <span className="inline-flex items-center gap-2">
+                          <FiCalendar aria-hidden="true" className="shrink-0 text-terracota" />
+                          {data.completo}
+                        </span>
+                        <span className="inline-flex items-center gap-2">
+                          <FiUsers aria-hidden="true" className="shrink-0 text-terracota" />
+                          {reserva.quantidadePessoas}{' '}
+                          {reserva.quantidadePessoas === 1 ? 'pessoa' : 'pessoas'}
+                        </span>
+                        <span className="inline-flex items-center gap-2 text-xs text-carvao/45">
+                          <FiHash aria-hidden="true" className="shrink-0 text-carvao/35" />
+                          Código de validação: <span className="font-mono">{reserva.codigoRecibo}</span>
+                        </span>
+                      </div>
+
+                      {reserva.observacoes && (
+                        <p className="mt-3 border-l-2 border-dourado/50 bg-areia/30 px-3 py-2 text-sm text-carvao/65">
+                          {reserva.observacoes}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 sm:flex-col sm:items-stretch">
+                      {reserva.status === 'CONFIRMADA' && (
+                        <button
+                          type="button"
+                          onClick={() => handleBaixarRecibo(reserva)}
+                          className="btn-secondary btn-sm"
+                        >
+                          <FiDownload aria-hidden="true" /> Recibo
+                        </button>
+                      )}
+                      {(reserva.status === 'PENDENTE' || reserva.status === 'CONFIRMADA') && (
+                        <button
+                          type="button"
+                          onClick={() => handleCancelar(reserva.id)}
+                          className="inline-flex items-center justify-center border border-red-200 px-4 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50"
+                        >
+                          Cancelar reserva
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(r.status === 'PENDENTE' || r.status === 'CONFIRMADA') && (
-                      <button
-                        type="button"
-                        onClick={() => handleCancelar(r.id)}
-                        className="rounded-full border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50"
-                      >
-                        Cancelar
-                      </button>
-                    )}
-                    {r.status === 'CONFIRMADA' && (
-                      <button
-                        type="button"
-                        onClick={() => handleBaixarRecibo(r)}
-                        className="btn-secondary btn-sm"
-                      >
-                        <FiDownload aria-hidden="true" /> Recibo
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
+
+        <div className="mt-6 flex flex-col gap-4 border border-carvao/10 bg-areia/30 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-carvao/70">
+            Precisa de alterar uma reserva ou tem alguma dúvida?
+          </p>
+          <a
+            href={RESTAURANTE.whatsappReservas}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-terracota hover:text-secundaria"
+          >
+            Falar com a equipa <FiArrowRight aria-hidden="true" />
+          </a>
+        </div>
       </div>
-    </section>
+    </div>
   );
 }

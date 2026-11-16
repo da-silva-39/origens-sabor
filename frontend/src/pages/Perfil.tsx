@@ -3,10 +3,21 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
-import { FiCamera, FiLock, FiUser, FiMail, FiPhone, FiMapPin, FiCalendar } from 'react-icons/fi';
+import ContaHeader from '../components/ContaHeader';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import {
+  FiCalendar,
+  FiCamera,
+  FiLock,
+  FiMail,
+  FiMapPin,
+  FiPhone,
+  FiUser,
+} from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 
 export default function Perfil() {
+  useDocumentTitle('O meu perfil — Origens do Sabor');
   const { user, isAuthenticated, loading } = useAuth();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -70,7 +81,10 @@ export default function Perfil() {
     }
     setCarregando(true);
     try {
-      await api.put('/usuarios/alterar-senha', { senhaAtual: currentPassword, novaSenha: newPassword });
+      await api.put('/usuarios/alterar-senha', {
+        senhaAtual: currentPassword,
+        novaSenha: newPassword,
+      });
       setMensagem('Senha alterada com sucesso!');
       setCurrentPassword('');
       setNewPassword('');
@@ -105,98 +119,279 @@ export default function Perfil() {
     }
   };
 
-  if (loading) return <div className="text-center py-20">Carregando...</div>;
+  if (loading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primaria" />
+      </div>
+    );
+  }
+
   if (!isAuthenticated) return null;
 
   const isOAuth = user?.isOAuth === true;
+  const iniciais =
+    user?.nome
+      ?.split(' ')
+      .filter(Boolean)
+      .map((parte) => parte[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'OS';
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold text-secundaria mb-8 flex items-center gap-2">
-        <FiUser /> Meu Perfil
-      </h1>
+    <div className="bg-fundo">
+      <ContaHeader
+        eyebrow="A sua conta"
+        titulo="Os meus dados"
+        descricao="Mantenha o seu perfil atualizado para receber as encomendas e reservas com os dados corretos."
+      />
 
-      {mensagem && <div className="bg-green-100 text-green-700 p-3 rounded-xl mb-4">{mensagem}</div>}
-      {erro && <div className="bg-red-100 text-red-700 p-3 rounded-xl mb-4">{erro}</div>}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Foto de perfil */}
-        <div className="bg-white p-6 rounded-2xl shadow-md text-center">
-          <h2 className="text-xl font-semibold mb-4 flex items-center justify-center gap-2"><FiCamera /> Foto</h2>
-          <div className="flex justify-center mb-4">
-            {fotoPreview ? (
-              <img src={fotoPreview} alt="Perfil" className="w-32 h-32 rounded-full object-cover border-4 border-primaria shadow-md" />
-            ) : (
-              <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-4xl">
-                {user?.nome?.charAt(0).toUpperCase()}
-              </div>
-            )}
+      <div className="container-custom max-w-5xl py-10">
+        {mensagem && (
+          <div className="mb-6 border border-oliva/30 bg-oliva/10 p-4 text-sm text-secundaria">
+            {mensagem}
           </div>
-          <form onSubmit={handleUploadFoto} className="space-y-4">
-            <input type="file" accept="image/*" onChange={handleFotoChange} className="w-full text-sm text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:bg-primaria file:text-white hover:file:bg-secundaria" />
-            {fotoFile && (
-              <button type="submit" disabled={carregando} className="bg-primaria text-white px-4 py-2 rounded-full w-full hover:bg-secundaria transition">
-                {carregando ? 'A enviar...' : 'Enviar Foto'}
-              </button>
-            )}
-          </form>
+        )}
+        {erro && (
+          <div className="mb-6 border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {erro}
+          </div>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-[18rem_1fr]">
+          <div className="border border-carvao/10 bg-white p-6 text-center">
+            <h2 className="flex items-center justify-center gap-2 font-display text-xl text-secundaria">
+              <FiCamera aria-hidden="true" className="text-terracota" /> Fotografia
+            </h2>
+
+            <div className="mt-5 flex justify-center">
+              {fotoPreview ? (
+                <img
+                  src={fotoPreview}
+                  alt="Fotografia de perfil"
+                  className="h-32 w-32 rounded-full border border-carvao/10 object-cover ring-4 ring-areia/60"
+                />
+              ) : (
+                <div className="flex h-32 w-32 items-center justify-center rounded-full bg-areia/60 font-display text-4xl text-secundaria ring-4 ring-areia/40">
+                  {iniciais}
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleUploadFoto} className="mt-6 space-y-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFotoChange}
+                aria-label="Escolher fotografia de perfil"
+                className="w-full text-xs text-carvao/55 file:mr-3 file:border-0 file:bg-areia/60 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-secundaria hover:file:bg-areia"
+              />
+              {fotoFile && (
+                <button
+                  type="submit"
+                  disabled={carregando}
+                  className="btn-primary btn-sm w-full"
+                >
+                  {carregando ? 'A enviar...' : 'Guardar fotografia'}
+                </button>
+              )}
+            </form>
+
+            <p className="mt-4 text-xs leading-relaxed text-carvao/45">
+              Use uma imagem nítida. Formatos JPG, PNG ou WebP.
+            </p>
+          </div>
+
+          <div className="border border-carvao/10 bg-white p-6 sm:p-7">
+            <h2 className="flex items-center gap-2 font-display text-xl text-secundaria">
+              <FiUser aria-hidden="true" className="text-terracota" /> Dados pessoais
+            </h2>
+            <p className="mt-1 text-xs text-carvao/45">
+              Estes dados são usados nas suas encomendas e reservas.
+            </p>
+
+            <form onSubmit={handleUpdateProfile} className="mt-5 space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label htmlFor="perfil-nome" className="label">
+                    Nome completo
+                  </label>
+                  <div className="relative">
+                    <FiUser
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-carvao/35"
+                    />
+                    <input
+                      id="perfil-nome"
+                      type="text"
+                      value={nome}
+                      onChange={(e) => setNome(e.target.value)}
+                      className="input pl-10"
+                      placeholder="Nome completo"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="perfil-email" className="label">
+                    E-mail
+                  </label>
+                  <div className="relative">
+                    <FiMail
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-carvao/35"
+                    />
+                    <input
+                      id="perfil-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="input pl-10"
+                      placeholder="E-mail"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="perfil-telefone" className="label">
+                    Telefone
+                  </label>
+                  <div className="relative">
+                    <FiPhone
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-carvao/35"
+                    />
+                    <input
+                      id="perfil-telefone"
+                      type="tel"
+                      value={telefone}
+                      onChange={(e) => setTelefone(e.target.value)}
+                      className="input pl-10"
+                      placeholder="+258 ..."
+                    />
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label htmlFor="perfil-endereco" className="label">
+                    Endereço de entrega
+                  </label>
+                  <div className="relative">
+                    <FiMapPin
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-carvao/35"
+                    />
+                    <input
+                      id="perfil-endereco"
+                      type="text"
+                      value={endereco}
+                      onChange={(e) => setEndereco(e.target.value)}
+                      className="input pl-10"
+                      placeholder="Rua, bairro, referência"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="perfil-nascimento" className="label">
+                    Data de nascimento
+                  </label>
+                  <div className="relative">
+                    <FiCalendar
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-carvao/35"
+                    />
+                    <input
+                      id="perfil-nascimento"
+                      type="date"
+                      value={dataNascimento}
+                      onChange={(e) => setDataNascimento(e.target.value)}
+                      className="input pl-10"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button type="submit" disabled={carregando} className="btn-primary">
+                  {carregando ? 'A guardar...' : 'Guardar alterações'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
 
-        {/* Dados pessoais */}
-        <div className="bg-white p-6 rounded-2xl shadow-md md:col-span-2">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2"><FiUser /> Dados Pessoais</h2>
-          <form onSubmit={handleUpdateProfile} className="space-y-4">
-            <div className="flex items-center gap-2 border rounded-full px-4 py-2">
-              <FiUser className="text-gray-400" />
-              <input type="text" value={nome} onChange={e => setNome(e.target.value)} className="w-full outline-none" placeholder="Nome completo" required />
-            </div>
-            <div className="flex items-center gap-2 border rounded-full px-4 py-2">
-              <FiMail className="text-gray-400" />
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full outline-none" placeholder="E-mail" required />
-            </div>
-            <div className="flex items-center gap-2 border rounded-full px-4 py-2">
-              <FiPhone className="text-gray-400" />
-              <input type="tel" value={telefone} onChange={e => setTelefone(e.target.value)} className="w-full outline-none" placeholder="Telefone" />
-            </div>
-            <div className="flex items-center gap-2 border rounded-full px-4 py-2">
-              <FiMapPin className="text-gray-400" />
-              <input type="text" value={endereco} onChange={e => setEndereco(e.target.value)} className="w-full outline-none" placeholder="Endereço" />
-            </div>
-            <div className="flex items-center gap-2 border rounded-full px-4 py-2">
-              <FiCalendar className="text-gray-400" />
-              <input type="date" value={dataNascimento} onChange={e => setDataNascimento(e.target.value)} className="w-full outline-none" />
-            </div>
-            <button type="submit" disabled={carregando} className="bg-primaria text-white px-6 py-2 rounded-full hover:bg-secundaria transition w-full md:w-auto">
-              {carregando ? 'A guardar...' : 'Guardar alterações'}
-            </button>
-          </form>
-        </div>
+        {!isOAuth && (
+          <div className="mt-6 border border-carvao/10 bg-white p-6 sm:p-7">
+            <h2 className="flex items-center gap-2 font-display text-xl text-secundaria">
+              <FiLock aria-hidden="true" className="text-terracota" /> Segurança
+            </h2>
+            <p className="mt-1 text-xs text-carvao/45">
+              Altere a palavra-passe da sua conta com regularidade.
+            </p>
+
+            <form onSubmit={handleChangePassword} className="mt-5 space-y-4">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label htmlFor="senha-atual" className="label">
+                    Palavra-passe atual
+                  </label>
+                  <input
+                    id="senha-atual"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="input"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="senha-nova" className="label">
+                    Nova palavra-passe
+                  </label>
+                  <input
+                    id="senha-nova"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="input"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="senha-confirmar" className="label">
+                    Confirmar nova
+                  </label>
+                  <input
+                    id="senha-confirmar"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="input"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button type="submit" disabled={carregando} className="btn-secondary">
+                  {carregando ? 'A alterar...' : 'Alterar palavra-passe'}
+                </button>
+              </div>
+            </form>
+
+            <p className="mt-4 text-xs text-carvao/45">
+              Esta opção não está disponível para contas criadas com o Google.
+            </p>
+          </div>
+        )}
       </div>
-
-      {/* Alterar senha (apenas para contas não OAuth) */}
-      {!isOAuth && (
-        <div className="bg-white p-6 rounded-2xl shadow-md mt-8">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2"><FiLock /> Alterar Senha</h2>
-          <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
-            <div className="flex items-center gap-2 border rounded-full px-4 py-2">
-              <FiLock className="text-gray-400" />
-              <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full outline-none" placeholder="Senha atual" required />
-            </div>
-            <div className="flex items-center gap-2 border rounded-full px-4 py-2">
-              <FiLock className="text-gray-400" />
-              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full outline-none" placeholder="Nova senha" required />
-            </div>
-            <div className="flex items-center gap-2 border rounded-full px-4 py-2">
-              <FiLock className="text-gray-400" />
-              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full outline-none" placeholder="Confirmar nova senha" required />
-            </div>
-            <button type="submit" disabled={carregando} className="bg-primaria text-white px-6 py-2 rounded-full hover:bg-secundaria transition">
-              {carregando ? 'A alterar...' : 'Alterar Senha'}
-            </button>
-          </form>
-          <p className="text-xs text-gray-400 mt-4">Nota: Esta opção não está disponível para contas criadas via Google.</p>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,248 +1,498 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
+import { useCartStore } from '../hooks/useCartStore';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { RESTAURANTE } from '../data/restaurante';
+import {
+  FiArrowRight,
+  FiCalendar,
+  FiChevronRight,
+  FiClock,
+  FiDollarSign,
+  FiHelpCircle,
+  FiPackage,
+  FiShoppingBag,
+  FiUser,
+} from 'react-icons/fi';
 
-import { FiPackage, FiClock, FiDollarSign, FiShoppingCart, FiCoffee, FiArrowRight } from 'react-icons/fi';
-import { HiOutlineEmojiHappy } from 'react-icons/hi';
+interface ItemPedido {
+  quantidade: number;
+}
 
 interface Pedido {
   id: number;
   total: number;
   status: string;
   dataPedido: string;
+  itens?: ItemPedido[];
+}
+
+const ESTADO_PEDIDO: Record<string, { rotulo: string; classe: string; ponto: string }> = {
+  PENDENTE: {
+    rotulo: 'Pendente',
+    classe: 'bg-dourado/15 text-[#8a6a34]',
+    ponto: 'bg-dourado',
+  },
+  PREPARANDO: {
+    rotulo: 'Em preparação',
+    classe: 'bg-primaria/10 text-primaria',
+    ponto: 'bg-primaria',
+  },
+  SAIU_ENTREGA: {
+    rotulo: 'A caminho',
+    classe: 'bg-oliva/15 text-oliva',
+    ponto: 'bg-oliva',
+  },
+  ENTREGUE: {
+    rotulo: 'Entregue',
+    classe: 'bg-secundaria/10 text-secundaria',
+    ponto: 'bg-secundaria',
+  },
+  CANCELADO: {
+    rotulo: 'Cancelado',
+    classe: 'bg-red-50 text-red-700',
+    ponto: 'bg-red-600',
+  },
+};
+
+function formatarPreco(valor: number) {
+  return `${new Intl.NumberFormat('pt-MZ', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(valor)} MT`;
+}
+
+function formatarData(valor: string) {
+  return new Intl.DateTimeFormat('pt-PT', {
+    day: '2-digit',
+    month: 'short',
+  }).format(new Date(valor));
 }
 
 export default function Dashboard() {
+  useDocumentTitle('O meu painel — Origens do Sabor');
   const { user, isAuthenticated, loading } = useAuth();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [carregandoPedidos, setCarregandoPedidos] = useState(true);
-  const [estatisticas, setEstatisticas] = useState({ totalPedidos: 0, pedidosPendentes: 0, totalGasto: 0 });
+  const totalItens = useCartStore((state) =>
+    state.items.reduce((acc, item) => acc + item.quantidade, 0)
+  );
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      const fetchPedidos = async () => {
-        try {
-          const response = await api.get('/pedidos/cliente');
-          const lista = response.data;
-          setPedidos(lista);
-          const total = lista.length;
-          const pendentes = lista.filter((p: Pedido) => p.status === 'PENDENTE').length;
-          const gasto = lista.reduce((acc: number, p: Pedido) => acc + p.total, 0);
-          setEstatisticas({ totalPedidos: total, pedidosPendentes: pendentes, totalGasto: gasto });
-        } catch (error) {
-          console.error('Erro ao carregar pedidos', error);
-        } finally {
-          setCarregandoPedidos(false);
-        }
-      };
-      fetchPedidos();
-    } else {
+    if (!isAuthenticated || !user) {
       setCarregandoPedidos(false);
+      return;
     }
+
+    let ativo = true;
+    api
+      .get<Pedido[]>('/pedidos/cliente')
+      .then((response) => {
+        if (ativo) setPedidos(response.data);
+      })
+      .catch((error) => {
+        console.error('Erro ao carregar pedidos', error);
+      })
+      .finally(() => {
+        if (ativo) setCarregandoPedidos(false);
+      });
+
+    return () => {
+      ativo = false;
+    };
   }, [isAuthenticated, user]);
+
+  const estatisticas = useMemo(() => {
+    const emCurso = pedidos.filter((pedido) =>
+      ['PENDENTE', 'PREPARANDO', 'SAIU_ENTREGA'].includes(pedido.status)
+    ).length;
+    const totalGasto = pedidos
+      .filter((pedido) => pedido.status !== 'CANCELADO')
+      .reduce((acc, pedido) => acc + pedido.total, 0);
+
+    return {
+      totalPedidos: pedidos.length,
+      emCurso,
+      totalGasto,
+    };
+  }, [pedidos]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-fundo">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primaria mx-auto"></div>
-          <p className="mt-4 text-gray-600">A carregar o seu espaço...</p>
-        </div>
+      <div className="flex h-96 items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primaria" />
       </div>
     );
   }
 
   if (!isAuthenticated) return null;
 
-  // Obter iniciais do nome para avatar
-  const iniciais = user?.nome?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
+  const primeiroNome = user?.nome?.split(' ')[0] || 'cliente';
+  const iniciais =
+    user?.nome
+      ?.split(' ')
+      .filter(Boolean)
+      .map((parte) => parte[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'OS';
 
   return (
-    <>
-      <div className="bg-gradient-to-br from-fundo via-white to-fundo min-h-screen">
-        <div className="container-custom py-8 md:py-12">
-          {/* Cabeçalho com avatar e boas‑vindas */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 transition-all duration-300 hover:shadow-xl">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-r from-primaria to-secundaria rounded-full flex items-center justify-center text-white text-xl font-bold shadow-md">
-                  {iniciais}
-                </div>
-                <div>
-                  <h1 className="text-3xl md:text-4xl font-bold text-secundaria">
-                    Olá, {user?.nome} 
-                  </h1>
-                 
-                </div>
-              </div>
-              {user?.fotoUrl && (
+    <div className="bg-fundo">
+      <section className="relative overflow-hidden bg-secundaria text-creme">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(193,154,91,0.22),transparent_45%)]" />
+        <div className="container-custom relative py-10 sm:py-14">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-5">
+              {user?.fotoUrl ? (
                 <img
                   src={user.fotoUrl}
-                  alt="Perfil"
-                  className="w-14 h-14 rounded-full object-cover border-2 border-primaria"
+                  alt=""
+                  className="h-20 w-20 rounded-full border border-dourado/40 object-cover ring-4 ring-creme/10"
                 />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dourado/40 bg-creme/10 font-display text-2xl text-creme ring-4 ring-creme/10">
+                  {iniciais}
+                </div>
               )}
+              <div>
+                <p className="eyebrow text-dourado">A sua conta</p>
+                <h1 className="mt-2 font-display text-3xl text-creme sm:text-4xl">
+                  Olá, {primeiroNome}
+                </h1>
+                <p className="mt-2 max-w-md text-sm leading-relaxed text-creme/70">
+                  Aqui encontra as suas encomendas, reservas e atalhos para tudo o
+                  que precisa no Origens do Sabor.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="/perfil"
+                className="btn border border-creme/25 text-creme hover:border-creme hover:bg-creme/10"
+              >
+                <FiUser aria-hidden="true" /> O meu perfil
+              </Link>
+              <Link to="/cardapio" className="btn-light">
+                Encomendar <FiArrowRight aria-hidden="true" />
+              </Link>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Estatísticas com ícones e animações */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-2xl shadow-md p-6 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group">
-              <div className="w-14 h-14 bg-primaria/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-primaria/20 transition">
-                <FiPackage className="text-3xl text-primaria" />
-              </div>
-              <div className="text-3xl font-bold text-primaria">{carregandoPedidos ? '…' : estatisticas.totalPedidos}</div>
-              <div className="text-gray-600 mt-1">Pedidos realizados</div>
+      <div className="container-custom py-10 sm:py-14">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="border border-carvao/10 bg-white p-5">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center bg-primaria/10 text-primaria">
+                <FiPackage aria-hidden="true" />
+              </span>
+              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-carvao/50">
+                Encomendas
+              </span>
             </div>
-            <div className="bg-white rounded-2xl shadow-md p-6 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group">
-              <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-amber-200 transition">
-                <FiClock className="text-3xl text-amber-600" />
-              </div>
-              <div className="text-3xl font-bold text-amber-600">{carregandoPedidos ? '…' : estatisticas.pedidosPendentes}</div>
-              <div className="text-gray-600 mt-1">Pedidos pendentes</div>
-            </div>
-            <div className="bg-white rounded-2xl shadow-md p-6 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group">
-              <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition">
-                <FiDollarSign className="text-3xl text-green-600" />
-              </div>
-              <div className="text-3xl font-bold text-green-600">{carregandoPedidos ? '…' : estatisticas.totalGasto.toFixed(2)} MT</div>
-              <div className="text-gray-600 mt-1">Total gasto</div>
-            </div>
+            <p className="mt-4 font-display text-3xl text-secundaria">
+              {carregandoPedidos ? '…' : estatisticas.totalPedidos}
+            </p>
+            <p className="mt-1 text-xs text-carvao/50">Total de pedidos realizados</p>
           </div>
 
-          {/* Ações rápidas com ícones e descrições – agora com 5 opções */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="border border-carvao/10 bg-white p-5">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center bg-dourado/15 text-[#8a6a34]">
+                <FiClock aria-hidden="true" />
+              </span>
+              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-carvao/50">
+                Em curso
+              </span>
+            </div>
+            <p className="mt-4 font-display text-3xl text-secundaria">
+              {carregandoPedidos ? '…' : estatisticas.emCurso}
+            </p>
+            <p className="mt-1 text-xs text-carvao/50">Pedidos a serem preparados ou entregues</p>
+          </div>
+
+          <div className="border border-carvao/10 bg-white p-5">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center bg-oliva/15 text-oliva">
+                <FiDollarSign aria-hidden="true" />
+              </span>
+              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-carvao/50">
+                Total gasto
+              </span>
+            </div>
+            <p className="mt-4 font-display text-3xl text-secundaria">
+              {carregandoPedidos ? '…' : formatarPreco(estatisticas.totalGasto)}
+            </p>
+            <p className="mt-1 text-xs text-carvao/50">Pedidos cancelados não incluídos</p>
+          </div>
+        </div>
+
+        <div className="mt-10 flex items-end justify-between gap-4">
+          <div>
+            <p className="eyebrow">Atalhos</p>
+            <h2 className="mt-2 font-display text-2xl text-secundaria sm:text-3xl">
+              O que deseja fazer?
+            </h2>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+          <Link
+            to="/cardapio"
+            className="group relative flex min-h-[19rem] flex-col justify-end overflow-hidden border border-carvao/10 bg-secundaria p-7 text-creme"
+          >
+            <img
+              src="/prato apresentacao.jpg"
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover opacity-45 transition-transform duration-700 group-hover:scale-105"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-secundaria via-secundaria/80 to-secundaria/25" />
+            <div className="relative">
+              <span className="inline-flex h-11 w-11 items-center justify-center border border-dourado/40 text-dourado">
+                <FiShoppingBag aria-hidden="true" className="h-5 w-5" />
+              </span>
+              <p className="eyebrow mt-5 text-dourado">Encomendas</p>
+              <h3 className="mt-2 font-display text-2xl text-creme sm:text-3xl">
+                Comece pelo menu
+              </h3>
+              <p className="mt-2 max-w-sm text-sm leading-relaxed text-creme/70">
+                Escolha os seus pratos, adicione ao carrinho e receba em casa ou
+                levante no restaurante.
+              </p>
+              <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-creme">
+                Ver o menu
+                <FiArrowRight
+                  aria-hidden="true"
+                  className="transition-transform group-hover:translate-x-1"
+                />
+              </span>
+            </div>
+          </Link>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
             <Link
-              to="/cardapio"
-              className="group relative overflow-hidden bg-gradient-to-r from-primaria to-orange-600 text-white rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+              to="/meus-pedidos"
+              className="group flex items-start justify-between gap-4 border border-carvao/10 bg-white p-6 transition-colors hover:border-terracota/40 hover:bg-areia/20"
             >
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
-              <div className="relative z-10">
-                <div className="text-5xl mb-3 animate-bounce-subtle"></div>
-                <div className="text-xl font-semibold">Explorar Cardápio</div>
-                <p className="text-sm opacity-90 mt-2">Descubra novos sabores e faça o seu pedido</p>
-                <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
+              <div>
+                <span className="inline-flex h-10 w-10 items-center justify-center bg-primaria/10 text-primaria">
+                  <FiPackage aria-hidden="true" />
+                </span>
+                <h3 className="mt-4 font-display text-xl text-secundaria">
+                  Acompanhar encomendas
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-carvao/55">
+                  Consulte o estado de cada pedido e descarregue o recibo.
+                </p>
               </div>
+              <FiArrowRight
+                aria-hidden="true"
+                className="mt-1 shrink-0 text-carvao/30 transition-all group-hover:translate-x-1 group-hover:text-terracota"
+              />
             </Link>
 
             <Link
               to="/carrinho"
-              className="group relative overflow-hidden bg-gradient-to-r from-secundaria to-amber-800 text-white rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+              className="group flex items-start justify-between gap-4 border border-carvao/10 bg-white p-6 transition-colors hover:border-terracota/40 hover:bg-areia/20"
             >
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
-              <div className="relative z-10">
-                <div className="text-5xl mb-3 animate-pulse"></div>
-                <div className="text-xl font-semibold">Meu Carrinho</div>
-                <p className="text-sm opacity-90 mt-2">Revise os itens e finalize o pedido</p>
-                <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
-              </div>
-            </Link>
-
-            <Link
-              to="/reservar-mesa"
-              className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-            >
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
-              <div className="relative z-10">
-                <div className="text-5xl mb-3"></div>
-                <div className="text-xl font-semibold">Reservar Mesa</div>
-                <p className="text-sm opacity-90 mt-2">Garanta o seu lugar para uma refeição especial</p>
-                <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
-              </div>
-            </Link>
-
-            <Link
-              to="/minhas-reservas"
-              className="group relative overflow-hidden bg-gradient-to-r from-teal-600 to-teal-800 text-white rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-            >
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
-              <div className="relative z-10">
-                <div className="text-5xl mb-3"></div>
-                <div className="text-xl font-semibold">Minhas Reservas</div>
-                <p className="text-sm opacity-90 mt-2">Acompanhe e faça download dos recibos</p>
-                <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
-              </div>
-            </Link>
-
-            <Link
-              to="/contacto"
-              className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-purple-800 text-white rounded-2xl p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-            >
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition"></div>
-              <div className="relative z-10">
-                <div className="text-5xl mb-3"></div>
-                <div className="text-xl font-semibold">Contactar</div>
-                <p className="text-sm opacity-90 mt-2">Dúvidas? Sugestões? Fale connosco</p>
-                <FiArrowRight className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition" />
-              </div>
-            </Link>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-2xl font-bold text-secundaria flex items-center gap-2">
-                <FiShoppingCart className="text-primaria" /> Últimos Pedidos
-              </h2>
-              <Link to="/meus-pedidos" className="text-primaria hover:underline text-sm flex items-center gap-1">
-                Ver todos <FiArrowRight size={14} />
-              </Link>
-            </div>
-            {carregandoPedidos ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primaria"></div>
-              </div>
-            ) : pedidos.length === 0 ? (
-              <div className="text-center py-12">
-                <HiOutlineEmojiHappy className="text-5xl text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">
-                  Ainda não fez nenhum pedido. <Link to="/cardapio" className="text-primaria font-semibold hover:underline">Peça agora!</Link>
+              <div>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-10 w-10 items-center justify-center bg-secundaria/10 text-secundaria">
+                    <FiShoppingBag aria-hidden="true" />
+                  </span>
+                  {totalItens > 0 && (
+                    <span className="inline-flex min-w-6 items-center justify-center bg-terracota px-2 py-0.5 text-[0.65rem] font-bold text-white">
+                      {totalItens} {totalItens === 1 ? 'artigo' : 'artigos'}
+                    </span>
+                  )}
+                </div>
+                <h3 className="mt-4 font-display text-xl text-secundaria">O meu carrinho</h3>
+                <p className="mt-1 text-sm leading-relaxed text-carvao/55">
+                  {totalItens > 0
+                    ? 'Revise os artigos escolhidos e finalize o pedido.'
+                    : 'O carrinho está vazio. Escolha algo do menu para começar.'}
                 </p>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {pedidos.slice(0, 5).map((pedido) => (
-                  <div
-                    key={pedido.id}
-                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-4 last:border-0 gap-3 hover:bg-gray-50 p-3 rounded-xl transition"
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-gray-800">Pedido #{pedido.id}</span>
-                      <span className="text-sm text-gray-500">
-                        {new Date(pedido.dataPedido).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          pedido.status === 'PENDENTE' ? 'bg-yellow-100 text-yellow-800' :
-                          pedido.status === 'PREPARANDO' ? 'bg-blue-100 text-blue-800' :
-                          pedido.status === 'ENTREGUE' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {pedido.status === 'PENDENTE' && 'Pendente'}
-                        {pedido.status === 'PREPARANDO' && 'Preparando'}
-                        {pedido.status === 'ENTREGUE' && 'Entregue'}
-                        {!['PENDENTE', 'PREPARANDO', 'ENTREGUE'].includes(pedido.status) && pedido.status}
-                      </span>
-                      <span className="font-bold text-primaria text-lg">{pedido.total.toFixed(2)} MT</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Dica extra - selo de qualidade */}
-          <div className="mt-8 text-center">
-            <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm text-sm text-gray-600">
-              <FiCoffee className="text-primaria" />
-            </div>
+              <FiArrowRight
+                aria-hidden="true"
+                className="mt-1 shrink-0 text-carvao/30 transition-all group-hover:translate-x-1 group-hover:text-terracota"
+              />
+            </Link>
           </div>
         </div>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <Link
+            to="/reservar-mesa"
+            className="group flex items-start gap-4 border border-carvao/10 bg-white p-5 transition-colors hover:border-terracota/40 hover:bg-areia/20"
+          >
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center bg-terracota/10 text-terracota">
+              <FiCalendar aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-display text-lg text-secundaria">Reservar mesa</span>
+              <span className="mt-1 block text-xs leading-relaxed text-carvao/55">
+                Garanta o seu lugar para almoço ou jantar.
+              </span>
+            </span>
+            <FiChevronRight
+              aria-hidden="true"
+              className="ml-auto mt-2 shrink-0 text-carvao/25 transition-transform group-hover:translate-x-0.5"
+            />
+          </Link>
+
+          <Link
+            to="/minhas-reservas"
+            className="group flex items-start gap-4 border border-carvao/10 bg-white p-5 transition-colors hover:border-terracota/40 hover:bg-areia/20"
+          >
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center bg-dourado/15 text-[#8a6a34]">
+              <FiClock aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-display text-lg text-secundaria">Minhas reservas</span>
+              <span className="mt-1 block text-xs leading-relaxed text-carvao/55">
+                Veja os detalhes, estado e recibos das reservas.
+              </span>
+            </span>
+            <FiChevronRight
+              aria-hidden="true"
+              className="ml-auto mt-2 shrink-0 text-carvao/25 transition-transform group-hover:translate-x-0.5"
+            />
+          </Link>
+
+          <Link
+            to="/perfil"
+            className="group flex items-start gap-4 border border-carvao/10 bg-white p-5 transition-colors hover:border-terracota/40 hover:bg-areia/20"
+          >
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center bg-secundaria/10 text-secundaria">
+              <FiUser aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-display text-lg text-secundaria">Os meus dados</span>
+              <span className="mt-1 block text-xs leading-relaxed text-carvao/55">
+                Atualize o perfil, contactos e palavra-passe.
+              </span>
+            </span>
+            <FiChevronRight
+              aria-hidden="true"
+              className="ml-auto mt-2 shrink-0 text-carvao/25 transition-transform group-hover:translate-x-0.5"
+            />
+          </Link>
+        </div>
+
+        <section className="mt-10 border border-carvao/10 bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-carvao/10 p-5 sm:px-6">
+            <div>
+              <p className="eyebrow">Atividade</p>
+              <h2 className="mt-1 font-display text-xl text-secundaria sm:text-2xl">
+                Encomendas recentes
+              </h2>
+            </div>
+            <Link
+              to="/meus-pedidos"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-terracota hover:text-secundaria"
+            >
+              Ver todas <FiArrowRight aria-hidden="true" />
+            </Link>
+          </div>
+
+          {carregandoPedidos ? (
+            <div className="space-y-4 p-6">
+              {Array.from({ length: 3 }).map((_, indice) => (
+                <div key={indice} className="h-14 animate-pulse bg-areia/50" />
+              ))}
+            </div>
+          ) : pedidos.length === 0 ? (
+            <div className="p-10 text-center">
+              <span className="mx-auto flex h-14 w-14 items-center justify-center bg-areia/60 text-terracota">
+                <FiPackage aria-hidden="true" className="h-6 w-6" />
+              </span>
+              <p className="mt-4 font-display text-xl text-secundaria">
+                Ainda não fez nenhuma encomenda
+              </p>
+              <p className="mt-1 text-sm text-carvao/55">
+                Comece pelo menu e receba o seu pedido em casa.
+              </p>
+              <Link to="/cardapio" className="btn-primary mt-5">
+                Ver o menu <FiArrowRight aria-hidden="true" />
+              </Link>
+            </div>
+          ) : (
+            <div className="divide-y divide-carvao/5">
+              {pedidos.slice(0, 4).map((pedido) => {
+                const estado = ESTADO_PEDIDO[pedido.status] || {
+                  rotulo: pedido.status,
+                  classe: 'bg-carvao/5 text-carvao/70',
+                  ponto: 'bg-carvao/40',
+                };
+                const artigos = pedido.itens?.reduce(
+                  (acc, item) => acc + item.quantidade,
+                  0
+                );
+
+                return (
+                  <Link
+                    key={pedido.id}
+                    to="/meus-pedidos"
+                    className="flex flex-col gap-3 p-5 transition-colors hover:bg-areia/15 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center border border-carvao/10 bg-areia/30 text-secundaria">
+                        <FiPackage aria-hidden="true" />
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold text-carvao">
+                          Encomenda #{pedido.id}
+                        </p>
+                        <p className="mt-0.5 text-xs text-carvao/50">
+                          {formatarData(pedido.dataPedido)}
+                          {artigos ? ` · ${artigos} ${artigos === 1 ? 'artigo' : 'artigos'}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 sm:justify-end">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wider ${estado.classe}`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${estado.ponto}`} />
+                        {estado.rotulo}
+                      </span>
+                      <span className="font-display text-base text-secundaria">
+                        {formatarPreco(pedido.total)}
+                      </span>
+                      <FiChevronRight aria-hidden="true" className="text-carvao/25" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <div className="mt-6 flex flex-col gap-4 border border-carvao/10 bg-areia/30 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <FiHelpCircle aria-hidden="true" className="text-xl text-terracota" />
+            <p className="text-sm text-carvao/70">
+              Precisa de ajuda com uma encomenda ou reserva?
+            </p>
+          </div>
+          <a
+            href={RESTAURANTE.whatsapp}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-terracota hover:text-secundaria"
+          >
+            Falar connosco <FiArrowRight aria-hidden="true" />
+          </a>
+        </div>
       </div>
-    </>
+    </div>
   );
 }

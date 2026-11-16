@@ -6,11 +6,15 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { nomeExibicao } from '../data/produtos';
 import { toast } from 'react-hot-toast';
+import ContaHeader from '../components/ContaHeader';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import {
+  FiCheckCircle,
   FiMapPin,
   FiPackage,
   FiNavigation,
   FiAlertTriangle,
+  FiUser,
   FiWifi,
   FiMap,
 } from 'react-icons/fi';
@@ -70,6 +74,7 @@ function ChangeView({ center }: { center: [number, number] }) {
 }
 
 export default function AgenteDashboard() {
+  useDocumentTitle('Painel do entregador — Origens do Sabor');
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [carregandoPedidos, setCarregandoPedidos] = useState(true);
@@ -179,87 +184,185 @@ export default function AgenteDashboard() {
     } catch (error) { toast.error('Erro ao marcar como entregue'); }
   };
 
-  if (authLoading || carregandoPedidos) return <div className="text-center py-20">Carregando...</div>;
+  if (authLoading || carregandoPedidos) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primaria" />
+      </div>
+    );
+  }
+
   if (!isAuthenticated || user?.role !== 'AGENTE') return null;
 
-  return (
-    <div className="bg-fundo min-h-screen py-8">
-      <div className="container-custom">
-        <h1 className="text-3xl font-bold text-secundaria mb-2">Painel do Entregador</h1>
-        <p className="text-gray-600 mb-6">Bem-vindo, {user?.nome}!</p>
+  const PRIORIDADE_STATUS: Record<string, string> = {
+    PENDENTE: 'bg-dourado/15 text-[#8a6a34]',
+    PREPARANDO: 'bg-primaria/10 text-primaria',
+    SAIU_ENTREGA: 'bg-oliva/15 text-oliva',
+    ENTREGUE: 'bg-secundaria/10 text-secundaria',
+    CANCELADO: 'bg-red-50 text-red-700',
+  };
 
-        <div className="bg-white rounded-2xl shadow-md p-5 mb-6 border-l-8 border-primaria">
-          <div className="flex items-center gap-3 mb-2">
-            <FiNavigation className="text-primaria text-2xl" />
-            <h2 className="text-xl font-semibold text-gray-800">Onde estou agora</h2>
+  return (
+    <div className="bg-fundo">
+      <ContaHeader
+        eyebrow="Loja · Entregas"
+        titulo="Painel do entregador"
+        descricao={`Bem-vindo, ${user?.nome}. Aqui vê a sua localização em tempo real e os pedidos que lhe foram atribuídos.`}
+        voltarPara="/"
+        voltarRotulo="Voltar ao início"
+        acao={
+          <span className="inline-flex items-center gap-2 border border-creme/25 px-4 py-2 text-xs font-semibold text-creme">
+            <span className="h-2 w-2 rounded-full bg-oliva" />
+            {pedidos.length} {pedidos.length === 1 ? 'pedido atribuído' : 'pedidos atribuídos'}
+          </span>
+        }
+      />
+
+      <div className="container-custom max-w-5xl space-y-6 py-10">
+        <div className="border border-carvao/10 bg-white p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <span className="inline-flex h-12 w-12 items-center justify-center bg-primaria/10 text-primaria">
+                <FiNavigation className="text-xl" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="font-display text-xl text-secundaria">Onde estou agora</h2>
+                <p className="mt-0.5 text-xs text-carvao/50">
+                  Atualização dinâmica a cada 15 segundos ou ao movimentar-se.
+                </p>
+              </div>
+            </div>
+            {location && (
+              <span className="inline-flex items-center gap-1.5 bg-oliva/10 px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-wider text-oliva">
+                <FiWifi aria-hidden="true" /> Partilhada em tempo real
+              </span>
+            )}
           </div>
-          {geoLoading && <p className="text-gray-500">A obter localização...</p>}
-          {geoError && (
-            <p className="text-red-500 flex items-center gap-2">
-              <FiAlertTriangle /> {geoError}
-            </p>
-          )}
-          {location && (
-            <>
-              <p className="text-gray-700 text-lg font-medium">
+
+          <div className="mt-4 border-t border-carvao/5 pt-4">
+            {geoLoading && (
+              <p className="text-sm text-carvao/55">A obter localização...</p>
+            )}
+            {geoError && (
+              <p className="flex items-center gap-2 text-sm font-medium text-red-600">
+                <FiAlertTriangle aria-hidden="true" /> {geoError}
+              </p>
+            )}
+            {location && (
+              <p className="text-base font-medium leading-snug text-carvao">
                 {carregandoEndereco ? 'A identificar local...' : enderecoAtual}
               </p>
-              <p className="text-xs text-gray-400">Atualização dinâmica a cada 15s ou ao se movimentar.</p>
-              <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <FiWifi /> Localização partilhada com o administrador em tempo real
-              </p>
-            </>
-          )}
+            )}
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-md p-2 mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 px-3 pt-3 flex items-center gap-2">
-            <FiMap /> Mapa da minha localização
+        <div className="border border-carvao/10 bg-white p-6">
+          <h2 className="flex items-center gap-2 font-display text-xl text-secundaria">
+            <FiMap aria-hidden="true" className="text-terracota" /> Mapa da minha localização
           </h2>
-          <div style={{ height: '400px', width: '100%', borderRadius: '12px', overflow: 'hidden' }}>
+          <div className="mt-4 h-[400px] overflow-hidden border border-carvao/10">
             {location ? (
-              <MapContainer center={[location.lat, location.lng]} zoom={15} style={{ height: '100%', width: '100%' }}>
-                <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <MapContainer
+                center={[location.lat, location.lng]}
+                zoom={15}
+                style={{ height: '100%', width: '100%' }}
+              >
+                <TileLayer
+                  attribution="&copy; OpenStreetMap contributors"
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
                 <Marker position={[location.lat, location.lng]}>
-                  <Popup>Você está aqui! <br /> {enderecoAtual}</Popup>
+                  <Popup>
+                    Você está aqui! <br /> {enderecoAtual}
+                  </Popup>
                 </Marker>
                 <ChangeView center={[location.lat, location.lng]} />
               </MapContainer>
             ) : (
-              <div className="flex justify-center items-center h-full bg-gray-100 text-gray-500">
+              <div className="flex h-full items-center justify-center bg-areia/30 text-sm text-carvao/50">
                 {geoError ? 'Localização indisponível' : 'A carregar mapa...'}
               </div>
             )}
           </div>
-          <p className="text-xs text-gray-400 text-center pt-2">Localização atualizada automaticamente.</p>
+          <p className="mt-3 text-center text-xs text-carvao/45">
+            Localização atualizada automaticamente.
+          </p>
         </div>
 
         {pedidos.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-md p-12 text-center">
-            <FiPackage className="text-6xl text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">Nenhum pedido atribuído no momento.</p>
+          <div className="border border-carvao/10 bg-white p-12 text-center">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center bg-areia/50 text-terracota">
+              <FiPackage className="h-7 w-7" aria-hidden="true" />
+            </span>
+            <p className="mt-5 font-display text-2xl text-secundaria">Nenhum pedido atribuído</p>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-carvao/55">
+              Quando a loja lhe atribuir uma entrega, ela aparece aqui com todos os
+              detalhes.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {pedidos.map(pedido => (
-              <div key={pedido.id} className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition">
-                <div className="bg-primaria text-white px-4 py-2"><span className="font-bold">Pedido #{pedido.id}</span></div>
-                <div className="p-4 space-y-3">
-                  <p><strong>Cliente:</strong> {pedido.clienteNome}</p>
-                  <p className="flex items-center gap-1"><FiMapPin /> <strong>Endereço:</strong> {pedido.endereco} - {pedido.bairro}</p>
-                  <p><strong>Itens:</strong></p>
-                  <ul className="list-disc list-inside text-sm text-gray-600 ml-2">
-                    {pedido.itens.map((item, idx) => (<li key={idx}>{item.quantidade}x {nomeExibicao(item.produtoNome)}</li>))}
-                  </ul>
-                  <p><strong>Total:</strong> {pedido.total.toFixed(2)} MT</p>
-                  <div className="flex justify-between items-center pt-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${pedido.status === 'PENDENTE' ? 'bg-yellow-100 text-yellow-800' : pedido.status === 'PREPARANDO' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                      {pedido.status}
-                    </span>
-                    <button onClick={() => marcarEntregue(pedido.id)} className="bg-primaria text-white px-4 py-2 rounded-full hover:bg-secundaria transition">Marcar como entregue</button>
-                  </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {pedidos.map((pedido) => (
+              <article
+                key={pedido.id}
+                className="overflow-hidden border border-carvao/10 bg-white"
+              >
+                <div className="flex items-center justify-between gap-3 border-b border-carvao/10 p-5">
+                  <h3 className="font-display text-xl text-secundaria">
+                    Encomenda #{pedido.id}
+                  </h3>
+                  <span
+                    className={`inline-flex px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wider ${
+                      PRIORIDADE_STATUS[pedido.status] || 'bg-carvao/5 text-carvao/65'
+                    }`}
+                  >
+                    {pedido.status}
+                  </span>
                 </div>
-              </div>
+
+                <div className="space-y-3 p-5 text-sm text-carvao/75">
+                  <p className="flex items-center gap-2">
+                    <FiUser aria-hidden="true" className="shrink-0 text-terracota" />
+                    <span>
+                      <span className="font-semibold text-carvao">{pedido.clienteNome}</span>
+                    </span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <FiMapPin aria-hidden="true" className="mt-0.5 shrink-0 text-terracota" />
+                    <span>
+                      {pedido.endereco}
+                      <span className="block text-xs text-carvao/45">{pedido.bairro}</span>
+                    </span>
+                  </p>
+
+                  <ul className="divide-y divide-carvao/5 border-y border-carvao/5 py-2">
+                    {pedido.itens.map((item, idx) => (
+                      <li key={idx} className="flex items-center justify-between py-1.5 text-xs">
+                        <span>
+                          {item.quantidade} × {nomeExibicao(item.produtoNome)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-carvao/50">
+                      Total
+                    </span>
+                    <span className="font-display text-lg text-secundaria">
+                      {pedido.total.toFixed(2)} MT
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => marcarEntregue(pedido.id)}
+                    className="btn-primary btn-sm w-full"
+                  >
+                    <FiCheckCircle aria-hidden="true" /> Marcar como entregue
+                  </button>
+                </div>
+              </article>
             ))}
           </div>
         )}
