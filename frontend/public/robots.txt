@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /perfil
+Disallow: /minhas-reservas
+Disallow: /meus-pedidos
+Disallow: /finalizar
+Disallow: /carrinho
+
+Sitemap: https://origens-sabor.vercel.app/sitemap.xml

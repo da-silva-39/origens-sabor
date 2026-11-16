@@ -1,81 +1,109 @@
-// backend/src/controllers/produtoController.ts
 import { Request, Response } from 'express';
 import { prisma } from '../config/prisma';
+import { AppError, asyncHandler, parseId } from '../utils/errors';
+import {
+  exigirTexto,
+  texto,
+  textoOuNull,
+  validarBooleano,
+  validarPreco,
+} from '../utils/validators';
 
-// Listar todos os produtos (público)
-export const listarProdutos = async (req: Request, res: Response) => {
-  try {
-    const produtos = await prisma.produto.findMany();
-    res.json(produtos);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao listar produtos' });
+function validarCamposProduto(body: Record<string, unknown>, criar: boolean) {
+  const dados: Record<string, unknown> = {};
+
+  if (criar || body.nome !== undefined) {
+    dados.nome = exigirTexto(body.nome, 'Nome do prato', { min: 2, max: 120 });
   }
-};
-
-// Criar produto (admin)
-export const criarProduto = async (req: Request, res: Response) => {
-  try {
-    const { nome, descricao, preco, categoria } = req.body;
-    let imagemUrl = null;
-    if (req.file) {
-      // Cloudinary devolve o URL completo em req.file.path
-      imagemUrl = req.file.path;
+  if (criar || body.descricao !== undefined) {
+    const descricao = textoOuNull(body.descricao);
+    if (descricao && descricao.length > 500) {
+      throw new AppError(400, 'A descrição não pode exceder 500 caracteres', 'VALIDACAO');
     }
-    const produto = await prisma.produto.create({
-      data: {
-        nome,
-        descricao,
-        preco: parseFloat(preco),
-        categoria,
-        imagemUrl,
-      },
-    });
-    res.status(201).json(produto);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao criar produto' });
+    dados.descricao = descricao;
   }
-};
-
-// Atualizar produto (admin)
-export const atualizarProduto = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { nome, descricao, preco, categoria } = req.body;
-    let imagemUrl: string | undefined = undefined;
-
-    if (req.file) {
-      imagemUrl = req.file.path;
-      // (Opcional) Se quiser apagar a imagem antiga do Cloudinary, pode implementar depois.
+  if (criar || body.preco !== undefined) {
+    dados.preco = validarPreco(body.preco);
+  }
+  if (criar || body.categoria !== undefined) {
+    dados.categoria = exigirTexto(body.categoria, 'Categoria', { min: 2, max: 60 });
+  }
+  if (body.alergenios !== undefined) {
+    const alergenios = textoOuNull(body.alergenios);
+    if (alergenios && alergenios.length > 300) {
+      throw new AppError(400, 'Os alergénios não podem exceder 300 caracteres', 'VALIDACAO');
     }
-
-    const produto = await prisma.produto.update({
-      where: { id: Number(id) },
-      data: {
-        nome,
-        descricao,
-        preco: parseFloat(preco),
-        categoria,
-        ...(imagemUrl && { imagemUrl }),
-      },
-    });
-    res.json(produto);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao atualizar produto' });
+    dados.alergenios = alergenios;
   }
-};
-
-// Deletar produto (admin)
-export const deletarProduto = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    // (Opcional) Remover imagem do Cloudinary se desejar – por simplicidade, não estamos a remover.
-    await prisma.produto.delete({ where: { id: Number(id) } });
-    res.status(204).send();
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao deletar produto' });
+  if (body.disponivel !== undefined) {
+    dados.disponivel = validarBooleano(body.disponivel, true);
+  } else if (criar) {
+    dados.disponivel = true;
   }
-};
+  if (body.destaque !== undefined) {
+    dados.destaque = validarBooleano(body.destaque, false);
+  } else if (criar) {
+    dados.destaque = false;
+  }
+
+  return dados;
+}
+
+export const listarProdutos = asyncHandler(async (req: Request, res: Response) => {
+  const categoria = texto(req.query.categoria);
+  const destaque = texto(req.query.destaque);
+  const disponivel = texto(req.query.disponivel);
+
+  const where: Record<string, unknown> = {};
+  if (categoria) where.categoria = categoria;
+  if (destaque === 'true') where.destaque = true;
+  if (disponivel === 'true') where.disponivel = true;
+  if (disponivel === 'false') where.disponivel = false;
+
+  const produtos = await prisma.produto.findMany({
+    where,
+    orderBy: [{ categoria: 'asc' }, { nome: 'asc' }],
+  });
+
+  res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+  res.json(produtos);
+});
+
+export const criarProduto = asyncHandler(async (req: Request, res: Response) => {
+  const dados = validarCamposProduto(req.body as Record<string, unknown>, true);
+  const imagemUrl = req.file?.path;
+
+  const produto = await prisma.produto.create({
+    data: {
+      ...(dados as any),
+      imagemUrl: imagemUrl ?? null,
+    },
+  });
+
+  res.status(201).json(produto);
+});
+
+export const atualizarProduto = asyncHandler(async (req: Request, res: Response) => {
+  const id = parseId(req.params.id);
+  const existente = await prisma.produto.findUnique({ where: { id } });
+  if (!existente) throw new AppError(404, 'Produto não encontrado', 'NAO_ENCONTRADO');
+
+  const dados = validarCamposProduto(req.body as Record<string, unknown>, false);
+  const imagemUrl = req.file?.path;
+
+  const produto = await prisma.produto.update({
+    where: { id },
+    data: {
+      ...(dados as any),
+      ...(imagemUrl ? { imagemUrl } : {}),
+    },
+  });
+
+  res.json(produto);
+});
+
+export const deletarProduto = asyncHandler(async (req: Request, res: Response) => {
+  const id = parseId(req.params.id);
+  await prisma.produto.delete({ where: { id } });
+  res.status(204).send();
+});

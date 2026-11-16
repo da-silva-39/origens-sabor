@@ -2,38 +2,107 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../config/prisma';
-const JWT_SECRET = process.env.JWT_SECRET!;
+import { asyncHandler, AppError } from '../utils/errors';
+import {
+  exigirTexto,
+  formatarTelefone,
+  normalizarEmail,
+  texto,
+  validarEmail,
+  validarSenha,
+  validarTelefoneMocambique,
+} from '../utils/validators';
 
-export const register = async (req: Request, res: Response) => {
-  const { nome, email, telefone, senha } = req.body;
-  if (!nome || !email || !senha) {
-    return res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
-  }
-  try {
-    const existing = await prisma.usuario.findUnique({ where: { email } });
-    if (existing) return res.status(400).json({ error: 'Email já registado' });
-    const hashed = await bcrypt.hash(senha, 10);
-    const user = await prisma.usuario.create({
-      data: { nome, email, telefone, senha: hashed, role: 'CLIENTE', isOAuth: false }
-    });
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ token, user: { id: user.id, nome: user.nome, email: user.email, role: user.role } });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro interno' });
-  }
-};
+function criarToken(user: { id: number; role: string }) {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new AppError(500, 'Configuração de autenticação indisponível');
+  return jwt.sign({ id: user.id, role: user.role }, secret, {
+    expiresIn: '7d',
+    algorithm: 'HS256',
+  });
+}
 
-export const login = async (req: Request, res: Response) => {
-  const { email, senha } = req.body;
-  try {
-    const user = await prisma.usuario.findUnique({ where: { email } });
-    if (!user) return res.status(401).json({ error: 'Credenciais inválidas' });
-    if (!user.ativo) return res.status(403).json({ error: 'Conta desativada' });
-    const valid = await bcrypt.compare(senha, user.senha);
-    if (!valid) return res.status(401).json({ error: 'Credenciais inválidas' });
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, nome: user.nome, email: user.email, role: user.role, telefone: user.telefone, endereco: user.endereco, dataNascimento: user.dataNascimento, fotoUrl: user.fotoUrl, isOAuth: user.isOAuth } });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro interno' });
+function dadosPublicos(user: {
+  id: number;
+  nome: string;
+  email: string;
+  role: string;
+  telefone: string | null;
+  endereco: string | null;
+  dataNascimento: Date | null;
+  fotoUrl: string | null;
+  isOAuth: boolean;
+}) {
+  return {
+    id: user.id,
+    nome: user.nome,
+    email: user.email,
+    role: user.role,
+    telefone: user.telefone,
+    endereco: user.endereco,
+    dataNascimento: user.dataNascimento,
+    fotoUrl: user.fotoUrl,
+    isOAuth: user.isOAuth,
+  };
+}
+
+export const register = asyncHandler(async (req: Request, res: Response) => {
+  const nome = exigirTexto(req.body?.nome, 'Nome', { min: 2, max: 80 });
+  const emailCru = exigirTexto(req.body?.email, 'E-mail', { max: 160 });
+  const email = normalizarEmail(emailCru);
+  const senha = validarSenha(req.body?.senha);
+  const telefoneCru = texto(req.body?.telefone);
+
+  if (!validarEmail(email)) {
+    throw new AppError(400, 'E-mail inválido', 'EMAIL_INVALIDO');
   }
-};
+  if (telefoneCru && !validarTelefoneMocambique(telefoneCru)) {
+    throw new AppError(400, 'Número de telefone inválido', 'TELEFONE_INVALIDO');
+  }
+
+  const existente = await prisma.usuario.findUnique({ where: { email } });
+  if (existente) {
+    throw new AppError(409, 'Já existe uma conta com este e-mail', 'EMAIL_EM_USO');
+  }
+
+  const hashed = await bcrypt.hash(senha, 10);
+  const user = await prisma.usuario.create({
+    data: {
+      nome,
+      email,
+      senha: hashed,
+      telefone: telefoneCru ? formatarTelefone(telefoneCru) : null,
+      role: 'CLIENTE',
+      isOAuth: false,
+      ativo: true,
+    },
+  });
+
+  res.status(201).json({ token: criarToken(user), user: dadosPublicos(user) });
+});
+
+export const login = asyncHandler(async (req: Request, res: Response) => {
+  const email = normalizarEmail(texto(req.body?.email));
+  const senha = texto(req.body?.senha);
+
+  if (!email || !senha) {
+    throw new AppError(400, 'E-mail e palavra-passe são obrigatórios', 'VALIDACAO');
+  }
+
+  const user = await prisma.usuario.findUnique({ where: { email } });
+  const credenciaisInvalidas = new AppError(
+    401,
+    'E-mail ou palavra-passe incorretos',
+    'CREDENCIAIS_INVALIDAS'
+  );
+
+  if (!user) throw credenciaisInvalidas;
+
+  const valida = await bcrypt.compare(senha, user.senha);
+  if (!valida) throw credenciaisInvalidas;
+  if (!user.ativo) {
+    throw new AppError(403, 'Conta desativada. Contacte o restaurante.', 'CONTA_DESATIVADA');
+  }
+
+  res.json({ token: criarToken(user), user: dadosPublicos(user) });
+});

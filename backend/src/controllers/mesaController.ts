@@ -1,76 +1,71 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/prisma';
+import { AppError, asyncHandler, parseId } from '../utils/errors';
+import { validarBooleano, validarInteiro } from '../utils/validators';
 
-export const listarMesas = async (_req: Request, res: Response) => {
-  try {
-    const mesas = await prisma.mesa.findMany({
-      orderBy: { numero: 'asc' },
+export const listarMesas = asyncHandler(async (_req: Request, res: Response) => {
+  const mesas = await prisma.mesa.findMany({
+    select: { id: true, numero: true, ocupada: true },
+    orderBy: { numero: 'asc' },
+  });
+  res.setHeader('Cache-Control', 'public, max-age=10, stale-while-revalidate=20');
+  res.json(mesas);
+});
+
+export const criarMesa = asyncHandler(async (req: Request, res: Response) => {
+  const numero = validarInteiro(req.body?.numero, 'Número da mesa', { min: 1, max: 999 });
+  const ocupada = validarBooleano(req.body?.ocupada, false);
+
+  const existente = await prisma.mesa.findUnique({ where: { numero } });
+  if (existente) {
+    throw new AppError(409, 'Já existe uma mesa com este número', 'MESA_DUPLICADA');
+  }
+
+  const novaMesa = await prisma.mesa.create({ data: { numero, ocupada } });
+  res.status(201).json(novaMesa);
+});
+
+export const atualizarMesa = asyncHandler(async (req: Request, res: Response) => {
+  const id = parseId(req.params.id);
+  const existente = await prisma.mesa.findUnique({ where: { id } });
+  if (!existente) throw new AppError(404, 'Mesa não encontrada', 'NAO_ENCONTRADA');
+
+  const numero =
+    req.body?.numero !== undefined
+      ? validarInteiro(req.body.numero, 'Número da mesa', { min: 1, max: 999 })
+      : undefined;
+  const ocupada =
+    req.body?.ocupada !== undefined ? validarBooleano(req.body.ocupada) : undefined;
+
+  if (numero !== undefined) {
+    const conflito = await prisma.mesa.findFirst({
+      where: { numero, id: { not: id } },
     });
-    res.json(mesas);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao listar mesas' });
-  }
-};
-
-export const criarMesa = async (req: Request, res: Response) => {
-  const { numero, ocupada } = req.body;
-  if (!numero) {
-    return res.status(400).json({ error: 'Número da mesa é obrigatório' });
-  }
-  try {
-    const existente = await prisma.mesa.findUnique({ where: { numero } });
-    if (existente) {
-      return res.status(409).json({ error: 'Já existe uma mesa com este número' });
+    if (conflito) {
+      throw new AppError(409, 'Número já utilizado por outra mesa', 'MESA_DUPLICADA');
     }
-    const novaMesa = await prisma.mesa.create({
-      data: {
-        numero,
-        ocupada: ocupada ?? false,
-      },
-    });
-    res.status(201).json(novaMesa);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao criar mesa' });
   }
-};
 
-export const atualizarMesa = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { numero, ocupada } = req.body;
-  try {
-    if (numero) {
-      const conflito = await prisma.mesa.findFirst({
-        where: { numero, id: { not: Number(id) } },
-      });
-      if (conflito) {
-        return res.status(409).json({ error: 'Número já utilizado por outra mesa' });
-      }
-    }
-    const mesaAtualizada = await prisma.mesa.update({
-      where: { id: Number(id) },
-      data: { numero, ocupada },
-    });
-    res.json(mesaAtualizada);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao atualizar mesa' });
-  }
-};
+  const mesaAtualizada = await prisma.mesa.update({
+    where: { id },
+    data: { ...(numero !== undefined ? { numero } : {}), ...(ocupada !== undefined ? { ocupada } : {}) },
+  });
 
-// Eliminar mesa
-export const deletarMesa = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  try {
-    const reservas = await prisma.reserva.findFirst({ where: { mesaId: Number(id) } });
-    if (reservas) {
-      return res.status(400).json({ error: 'Não é possível eliminar mesa com reservas existentes' });
-    }
-    await prisma.mesa.delete({ where: { id: Number(id) } });
-    res.status(204).send();
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao eliminar mesa' });
+  res.json(mesaAtualizada);
+});
+
+export const deletarMesa = asyncHandler(async (req: Request, res: Response) => {
+  const id = parseId(req.params.id);
+
+  const reservas = await prisma.reserva.count({ where: { mesaId: id } });
+  if (reservas > 0) {
+    throw new AppError(
+      409,
+      'Não é possível eliminar uma mesa com reservas associadas',
+      'DEPENDENCIA'
+    );
   }
-};
+
+  await prisma.mesa.delete({ where: { id } });
+  res.status(204).send();
+});

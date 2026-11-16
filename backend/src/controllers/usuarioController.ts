@@ -1,179 +1,240 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../config/prisma';
+import { AppError, asyncHandler, parseId } from '../utils/errors';
+import {
+  exigirTexto,
+  formatarTelefone,
+  normalizarEmail,
+  texto,
+  textoOuNull,
+  validarEmail,
+  validarInteiro,
+  validarSenha,
+  validarTelefoneMocambique,
+} from '../utils/validators';
 
-// ==================== USUÁRIOS ====================
-export const listarUsuarios = async (req: Request, res: Response) => {
-  try {
-    const usuarios = await prisma.usuario.findMany({
-      select: {
-        id: true,
-        nome: true,
-        email: true,
-        telefone: true,
-        role: true,
-        ativo: true,
-        endereco: true,
-        fotoUrl: true,
-        isOAuth: true,
-      },
-    });
-    res.json(usuarios);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao listar utilizadores' });
+const ROLES = ['ADMIN', 'CLIENTE', 'AGENTE'] as const;
+
+export const listarUsuarios = asyncHandler(async (_req: Request, res: Response) => {
+  const usuarios = await prisma.usuario.findMany({
+    select: {
+      id: true,
+      nome: true,
+      email: true,
+      telefone: true,
+      role: true,
+      ativo: true,
+      endereco: true,
+      fotoUrl: true,
+      isOAuth: true,
+      createdAt: true,
+    },
+    orderBy: { nome: 'asc' },
+    take: 500,
+  });
+  res.json(usuarios);
+});
+
+export const criarUsuario = asyncHandler(async (req: Request, res: Response) => {
+  const nome = exigirTexto(req.body?.nome, 'Nome', { min: 2, max: 80 });
+  const email = normalizarEmail(exigirTexto(req.body?.email, 'E-mail', { max: 160 }));
+  const senha = validarSenha(req.body?.senha);
+  const role = texto(req.body?.role).toUpperCase();
+
+  if (!validarEmail(email)) throw new AppError(400, 'E-mail inválido', 'EMAIL_INVALIDO');
+  if (!ROLES.includes(role as (typeof ROLES)[number])) {
+    throw new AppError(400, 'Tipo de utilizador inválido', 'ROLE_INVALIDA');
   }
-};
 
-export const criarUsuario = async (req: Request, res: Response) => {
-  const { nome, email, telefone, senha, role } = req.body;
-  try {
-    const hashed = await bcrypt.hash(senha, 10);
-    const usuario = await prisma.usuario.create({
-      data: { nome, email, telefone, senha: hashed, role, ativo: true, isOAuth: false },
-    });
-    res.status(201).json({
-      id: usuario.id,
-      nome: usuario.nome,
-      email: usuario.email,
-      role: usuario.role,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao criar utilizador' });
+  const telefone = textoOuNull(req.body?.telefone);
+  if (telefone && !validarTelefoneMocambique(telefone)) {
+    throw new AppError(400, 'Telefone inválido', 'TELEFONE_INVALIDO');
   }
-};
 
-export const toggleUsuarioAtivo = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  try {
-    const usuario = await prisma.usuario.findUnique({ where: { id: Number(id) } });
-    if (!usuario) return res.status(404).json({ error: 'Utilizador não encontrado' });
-    const updated = await prisma.usuario.update({
-      where: { id: Number(id) },
-      data: { ativo: !usuario.ativo },
-    });
-    res.json({ ativo: updated.ativo });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao alterar estado do utilizador' });
+  const existente = await prisma.usuario.findUnique({ where: { email } });
+  if (existente) throw new AppError(409, 'Já existe um utilizador com este e-mail', 'EMAIL_EM_USO');
+
+  const hashed = await bcrypt.hash(senha, 10);
+  const usuario = await prisma.usuario.create({
+    data: {
+      nome,
+      email,
+      telefone: telefone ? formatarTelefone(telefone) : null,
+      senha: hashed,
+      role: role as (typeof ROLES)[number],
+      ativo: true,
+      isOAuth: false,
+    },
+  });
+
+  res.status(201).json({
+    id: usuario.id,
+    nome: usuario.nome,
+    email: usuario.email,
+    role: usuario.role,
+  });
+});
+
+export const toggleUsuarioAtivo = asyncHandler(async (req: Request, res: Response) => {
+  const id = parseId(req.params.id);
+  const atual = (req as any).user;
+
+  if (atual.id === id) {
+    throw new AppError(400, 'Não pode desativar a sua própria conta', 'OPERACAO_INVALIDA');
   }
-};
 
-export const atualizarPerfil = async (req: Request, res: Response) => {
+  const usuario = await prisma.usuario.findUnique({ where: { id } });
+  if (!usuario) throw new AppError(404, 'Utilizador não encontrado', 'NAO_ENCONTRADO');
+
+  const updated = await prisma.usuario.update({
+    where: { id },
+    data: { ativo: !usuario.ativo },
+  });
+
+  res.json({ ativo: updated.ativo });
+});
+
+export const atualizarPerfil = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
-  const { nome, email, telefone, endereco, dataNascimento } = req.body;
-  try {
-    if (email) {
-      const emailEmUso = await prisma.usuario.findFirst({
-        where: { email, id: { not: userId } },
-      });
-      if (emailEmUso) {
-        return res.status(400).json({ error: 'Este email já está em uso' });
+  const dados: Record<string, unknown> = {};
+
+  if (req.body?.nome !== undefined) {
+    dados.nome = exigirTexto(req.body.nome, 'Nome', { min: 2, max: 80 });
+  }
+
+  if (req.body?.email !== undefined) {
+    const email = normalizarEmail(exigirTexto(req.body.email, 'E-mail', { max: 160 }));
+    if (!validarEmail(email)) throw new AppError(400, 'E-mail inválido', 'EMAIL_INVALIDO');
+    const emUso = await prisma.usuario.findFirst({
+      where: { email, id: { not: userId } },
+    });
+    if (emUso) throw new AppError(409, 'Este e-mail já está em uso', 'EMAIL_EM_USO');
+    dados.email = email;
+  }
+
+  if (req.body?.telefone !== undefined) {
+    const telefone = textoOuNull(req.body.telefone);
+    if (telefone && !validarTelefoneMocambique(telefone)) {
+      throw new AppError(400, 'Telefone inválido', 'TELEFONE_INVALIDO');
+    }
+    dados.telefone = telefone ? formatarTelefone(telefone) : null;
+  }
+
+  if (req.body?.endereco !== undefined) {
+    const endereco = textoOuNull(req.body.endereco);
+    if (endereco && endereco.length > 300) {
+      throw new AppError(400, 'Endereço demasiado longo', 'VALIDACAO');
+    }
+    dados.endereco = endereco;
+  }
+
+  if (req.body?.dataNascimento !== undefined) {
+    const valor = textoOuNull(req.body.dataNascimento);
+    if (!valor) {
+      dados.dataNascimento = null;
+    } else {
+      const data = new Date(valor);
+      if (Number.isNaN(data.getTime()) || data > new Date()) {
+        throw new AppError(400, 'Data de nascimento inválida', 'DATA_INVALIDA');
       }
+      dados.dataNascimento = data;
     }
-    const usuario = await prisma.usuario.update({
-      where: { id: userId },
-      data: {
-        nome,
-        email,
-        telefone,
-        endereco,
-        dataNascimento: dataNascimento ? new Date(dataNascimento) : undefined,
-      },
-    });
-    res.json({
-      id: usuario.id,
-      nome: usuario.nome,
-      email: usuario.email,
-      telefone: usuario.telefone,
-      endereco: usuario.endereco,
-      fotoUrl: usuario.fotoUrl,
-      isOAuth: usuario.isOAuth,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao atualizar perfil' });
   }
-};
 
-export const alterarSenha = async (req: Request, res: Response) => {
+  const usuario = await prisma.usuario.update({
+    where: { id: userId },
+    data: dados,
+  });
+
+  res.json({
+    id: usuario.id,
+    nome: usuario.nome,
+    email: usuario.email,
+    telefone: usuario.telefone,
+    endereco: usuario.endereco,
+    dataNascimento: usuario.dataNascimento,
+    fotoUrl: usuario.fotoUrl,
+    isOAuth: usuario.isOAuth,
+  });
+});
+
+export const alterarSenha = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
-  const { senhaAtual, novaSenha } = req.body;
-  try {
-    const user = await prisma.usuario.findUnique({ where: { id: userId } });
-    if (!user) return res.status(404).json({ error: 'Utilizador não encontrado' });
-    if (user.isOAuth) {
-      return res.status(400).json({ error: 'Contas Google não permitem alterar senha' });
+  const senhaAtual = texto(req.body?.senhaAtual);
+  const novaSenha = validarSenha(req.body?.novaSenha);
+
+  const user = await prisma.usuario.findUnique({ where: { id: userId } });
+  if (!user) throw new AppError(404, 'Utilizador não encontrado', 'NAO_ENCONTRADO');
+  if (user.isOAuth) {
+    throw new AppError(
+      400,
+      'Contas Google não permitem alterar a palavra-passe',
+      'CONTA_OAUTH'
+    );
+  }
+  if (!senhaAtual) throw new AppError(400, 'Palavra-passe atual em falta', 'VALIDACAO');
+
+  const valida = await bcrypt.compare(senhaAtual, user.senha);
+  if (!valida) {
+    throw new AppError(401, 'Palavra-passe atual incorreta', 'CREDENCIAIS_INVALIDAS');
+  }
+
+  const hashed = await bcrypt.hash(novaSenha, 10);
+  await prisma.usuario.update({ where: { id: userId }, data: { senha: hashed } });
+
+  res.json({ success: true });
+});
+
+export const uploadFoto = asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  if (!req.file) throw new AppError(400, 'Nenhum ficheiro enviado', 'FICHEIRO_EM_FALTA');
+
+  const fotoUrl = req.file.path;
+  await prisma.usuario.update({ where: { id: userId }, data: { fotoUrl } });
+  res.json({ fotoUrl });
+});
+
+export const guardarLocalizacaoAgente = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+    const latitude = Number(req.body?.latitude);
+    const longitude = Number(req.body?.longitude);
+    const endereco = textoOuNull(req.body?.endereco);
+
+    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+      throw new AppError(400, 'Latitude inválida', 'COORDENADAS_INVALIDAS');
     }
-    const valid = await bcrypt.compare(senhaAtual, user.senha);
-    if (!valid) return res.status(401).json({ error: 'Senha atual incorreta' });
-    const hashed = await bcrypt.hash(novaSenha, 10);
-    await prisma.usuario.update({ where: { id: userId }, data: { senha: hashed } });
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao alterar senha' });
-  }
-};
+    if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+      throw new AppError(400, 'Longitude inválida', 'COORDENADAS_INVALIDAS');
+    }
+    if (endereco && endereco.length > 300) {
+      throw new AppError(400, 'Endereço demasiado longo', 'VALIDACAO');
+    }
 
-// ==================== UPLOAD DE FOTO DE PERFIL (CLOUDINARY) ====================
-export const uploadFoto = async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
-  if (!req.file) {
-    return res.status(400).json({ error: 'Nenhum ficheiro enviado' });
-  }
-  try {
-    // O Cloudinary já fez o upload e disponibiliza o URL em req.file.path
-    const fotoUrl = req.file.path;
-    await prisma.usuario.update({
-      where: { id: userId },
-      data: { fotoUrl },
-    });
-    res.json({ fotoUrl });
-  } catch (error) {
-    console.error('Erro ao fazer upload da foto:', error);
-    res.status(500).json({ error: 'Erro ao fazer upload da imagem' });
-  }
-};
-
-export const guardarLocalizacaoAgente = async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
-  const { latitude, longitude, endereco } = req.body;
-
-  if (!latitude || !longitude) {
-    return res.status(400).json({ error: 'Coordenadas obrigatórias' });
-  }
-
-  try {
     const localizacao = await prisma.localizacaoAgente.create({
-      data: {
-        agenteId: userId,
-        latitude,
-        longitude,
-        endereco: endereco || null,
-      },
+      data: { agenteId: userId, latitude, longitude, endereco },
     });
-    res.status(201).json({ message: 'Localização guardada', id: localizacao.id });
-  } catch (error) {
-    console.error('Erro ao guardar localização:', error);
-    res.status(500).json({ error: 'Erro interno ao guardar localização' });
-  }
-};
 
-export const obterUltimaLocalizacaoAgente = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  try {
+    res.status(201).json({
+      message: 'Localização guardada',
+      id: localizacao.id,
+    });
+  }
+);
+
+export const obterUltimaLocalizacaoAgente = asyncHandler(
+  async (req: Request, res: Response) => {
+    const id = validarInteiro(req.params.id, 'Agente', { min: 1 });
+
     const localizacao = await prisma.localizacaoAgente.findFirst({
-      where: { agenteId: Number(id) },
+      where: { agenteId: id },
       orderBy: { createdAt: 'desc' },
     });
+
     if (!localizacao) {
-      return res.status(404).json({ error: 'Nenhuma localização encontrada para este agente' });
+      throw new AppError(404, 'Nenhuma localização encontrada para este agente', 'NAO_ENCONTRADA');
     }
     res.json(localizacao);
-  } catch (error) {
-    console.error('Erro ao buscar localização:', error);
-    res.status(500).json({ error: 'Erro interno ao buscar localização' });
   }
-};
+);

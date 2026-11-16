@@ -1,295 +1,381 @@
-// backend/src/controllers/pedidoController.ts
 import { Request, Response } from 'express';
 import { prisma } from '../config/prisma';
 import { sendPedidoEmail } from '../services/emailService';
 import { enviarWhatsApp } from '../services/whatsappService';
+import { AppError, asyncHandler, parseId } from '../utils/errors';
+import {
+  exigirTexto,
+  formatarTelefone,
+  texto,
+  validarInteiro,
+  validarTelefoneMocambique,
+} from '../utils/validators';
 
 const round2 = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
-// ==================== Validações ====================
-function validarEmail(email: string): boolean {
-  const re = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
-  return re.test(email);
+const STATUS_PEDIDO = [
+  'PENDENTE',
+  'PREPARANDO',
+  'SAIU_ENTREGA',
+  'ENTREGUE',
+  'CANCELADO',
+] as const;
+
+type StatusPedido = (typeof STATUS_PEDIDO)[number];
+
+function validarStatus(value: unknown): StatusPedido {
+  const status = texto(value).toUpperCase();
+  if (!STATUS_PEDIDO.includes(status as StatusPedido)) {
+    throw new AppError(400, 'Estado do pedido inválido', 'STATUS_INVALIDO');
+  }
+  return status as StatusPedido;
 }
 
-function validarTelefoneMocambique(telefone: string): boolean {
-  const regexCompleto = /^\+258[8][2-7]\d{7}$/;
-  const regexLocal = /^[8][2-7]\d{7}$/;
-  return regexCompleto.test(telefone) || regexLocal.test(telefone);
+interface ItemEntrada {
+  produtoId: number;
+  quantidade: number;
 }
 
-function formatarTelefone(telefone: string): string {
-  if (telefone.startsWith('+258')) return telefone;
-  if (telefone.match(/^[8][2-7]\d{7}$/)) return '+258' + telefone;
-  return telefone;
+function normalizarItens(value: unknown): ItemEntrada[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > 50) {
+    throw new AppError(400, 'O pedido deve conter entre 1 e 50 artigos', 'ITENS_INVALIDOS');
+  }
+
+  const agregados = new Map<number, number>();
+
+  for (const item of value) {
+    const produtoId = Number((item as { produtoId?: unknown })?.produtoId);
+    const quantidade = Number((item as { quantidade?: unknown })?.quantidade);
+
+    if (!Number.isInteger(produtoId) || produtoId <= 0) {
+      throw new AppError(400, 'Produto inválido no pedido', 'ITENS_INVALIDOS');
+    }
+    if (!Number.isInteger(quantidade) || quantidade <= 0 || quantidade > 50) {
+      throw new AppError(400, 'Quantidade inválida no pedido', 'ITENS_INVALIDOS');
+    }
+
+    agregados.set(produtoId, (agregados.get(produtoId) || 0) + quantidade);
+  }
+
+  return [...agregados.entries()].map(([produtoId, quantidade]) => ({
+    produtoId,
+    quantidade,
+  }));
 }
 
-// ==================== CLIENTE ====================
-export const listarPedidosCliente = async (req: Request, res: Response) => {
+function mensagemItens(itens: Array<{ quantidade: number; produtoNome: string; precoUnitario: number }>) {
+  return itens
+    .map(
+      (item) =>
+        `${item.quantidade}x ${item.produtoNome} – ${(item.quantidade * item.precoUnitario).toFixed(2)} MT`
+    )
+    .join('\n');
+}
+
+async function notificarPedido(pedido: {
+  id: number;
+  subtotal: number;
+  frete: number;
+  total: number;
+  status: string;
+  itens: Array<{ quantidade: number; produtoNome: string; precoUnitario: number }>;
+}, dados: {
+  clienteNome: string;
+  clienteEmail: string;
+  telefone: string | null;
+  endereco: string;
+  bairro: string;
+  tempoEntrega?: string;
+}) {
+  const adminWhats = process.env.NOTIFICATION_WHATSAPP_TO;
+  const resumo = mensagemItens(pedido.itens);
+  const tarefas: Promise<unknown>[] = [];
+
+  if (adminWhats) {
+    const mensagem = [
+      `Novo pedido #${pedido.id}`,
+      '',
+      `Cliente: ${dados.clienteNome}`,
+      `Telefone: ${dados.telefone || 'não informado'}`,
+      `E-mail: ${dados.clienteEmail}`,
+      `Endereço: ${dados.endereco}`,
+      `Bairro: ${dados.bairro}`,
+      '',
+      'Itens:',
+      resumo,
+      '',
+      `Subtotal: ${pedido.subtotal.toFixed(2)} MT`,
+      `Frete: ${pedido.frete.toFixed(2)} MT`,
+      `Total: ${pedido.total.toFixed(2)} MT`,
+      `Estado: ${pedido.status}`,
+    ].join('\n');
+    tarefas.push(enviarWhatsApp(adminWhats, mensagem));
+  }
+
+  if (dados.telefone) {
+    const mensagem = [
+      `Pedido #${pedido.id} recebido`,
+      '',
+      `Olá ${dados.clienteNome}, recebemos o seu pedido.`,
+      '',
+      resumo,
+      '',
+      `Total: ${pedido.total.toFixed(2)} MT`,
+      `Tempo estimado: ${dados.tempoEntrega || 'a confirmar'}`,
+      '',
+      'Obrigado por escolher o Origens do Sabor.',
+    ].join('\n');
+    tarefas.push(enviarWhatsApp(dados.telefone, mensagem));
+  }
+
+  tarefas.push(
+    sendPedidoEmail({
+      id: pedido.id,
+      clienteNome: dados.clienteNome,
+      endereco: dados.endereco,
+      bairro: dados.bairro,
+      subtotal: pedido.subtotal,
+      frete: pedido.frete,
+      total: pedido.total,
+      status: pedido.status,
+      itens: pedido.itens.map((item) => ({
+        nome: item.produtoNome,
+        quantidade: item.quantidade,
+        precoUnitario: item.precoUnitario,
+      })),
+    })
+  );
+
+  await Promise.allSettled(tarefas);
+}
+
+export const listarPedidosCliente = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
-  try {
-    const pedidos = await prisma.pedido.findMany({
-      where: { clienteId: userId },
-      include: { itens: true },
-      orderBy: { dataPedido: 'desc' },
-    });
-    res.json(pedidos);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao listar pedidos' });
-  }
-};
+  const pedidos = await prisma.pedido.findMany({
+    where: { clienteId: userId },
+    include: { itens: true },
+    orderBy: { dataPedido: 'desc' },
+  });
+  res.json(pedidos);
+});
 
-// ==================== CRIAR PEDIDO ====================
-export const criarPedido = async (req: Request, res: Response) => {
+export const criarPedido = asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const { clienteNome, clienteEmail, telefone, endereco, bairro, itens, tempoEntrega } = req.body;
 
-  if (!clienteNome || !clienteEmail || !telefone || !endereco || !bairro || !Array.isArray(itens) || itens.length === 0) {
-    return res.status(400).json({ error: 'Dados incompletos' });
-  }
-  if (!validarEmail(clienteEmail)) {
-    return res.status(400).json({ error: 'E-mail inválido' });
-  }
-  const telefoneValido = validarTelefoneMocambique(telefone);
-  if (!telefoneValido) {
-    return res.status(400).json({ error: 'Número de telefone inválido. Use formato +25882XXXXXXX ou 82XXXXXXX' });
-  }
-  const telefoneFormatado = formatarTelefone(telefone);
+  const endereco = exigirTexto(req.body?.endereco, 'Endereço', { min: 5, max: 300 });
+  const bairro = exigirTexto(req.body?.bairro, 'Bairro', { min: 2, max: 80 });
+  const itens = normalizarItens(req.body?.itens);
+  const tempoEntrega = texto(req.body?.tempoEntrega).slice(0, 60);
 
-  try {
-    const produtoIds = [...new Set(itens.map((item: any) => Number(item.produtoId)))];
-    if (produtoIds.some((id) => !Number.isInteger(id) || id <= 0)) {
-      return res.status(400).json({ error: 'Produto inválido no pedido' });
-    }
+  const telefoneInformado = texto(req.body?.telefone);
+  if (telefoneInformado && !validarTelefoneMocambique(telefoneInformado)) {
+    throw new AppError(400, 'Telefone inválido', 'TELEFONE_INVALIDO');
+  }
+  const telefone = telefoneInformado
+    ? formatarTelefone(telefoneInformado)
+    : user.telefone || null;
 
-    const produtos = await prisma.produto.findMany({ where: { id: { in: produtoIds } } });
+  if (!telefone) {
+    throw new AppError(
+      400,
+      'Indique um telefone de contacto para a entrega',
+      'TELEFONE_OBRIGATORIO'
+    );
+  }
+
+  const produtoIds = itens.map((item) => item.produtoId);
+
+  const pedido = await prisma.$transaction(async (tx) => {
+    const produtos = await tx.produto.findMany({
+      where: { id: { in: produtoIds } },
+    });
+
     if (produtos.length !== produtoIds.length) {
-      return res.status(400).json({ error: 'Um ou mais produtos já não estão disponíveis' });
+      throw new AppError(
+        400,
+        'Um ou mais produtos já não estão disponíveis',
+        'PRODUTO_INDISPONIVEL'
+      );
     }
 
-    const produtosPorId = new Map(produtos.map((produto) => [produto.id, produto]));
-    const itensCalculados = [];
-    for (const item of itens) {
-      const quantidade = Number(item.quantidade);
-      if (!Number.isInteger(quantidade) || quantidade <= 0) {
-        return res.status(400).json({ error: 'Quantidade inválida no pedido' });
+    const porId = new Map(produtos.map((produto) => [produto.id, produto]));
+    const linhas = itens.map((item) => {
+      const produto = porId.get(item.produtoId)!;
+      if (!produto.disponivel) {
+        throw new AppError(
+          400,
+          `O prato "${produto.nome}" está temporariamente indisponível`,
+          'PRODUTO_INDISPONIVEL'
+        );
       }
-      const produto = produtosPorId.get(Number(item.produtoId))!;
-      itensCalculados.push({
+      return {
         produtoId: produto.id,
         produtoNome: produto.nome,
         precoUnitario: produto.preco,
-        quantidade,
-        subtotal: round2(produto.preco * quantidade),
-      });
-    }
+        quantidade: item.quantidade,
+        subtotal: round2(produto.preco * item.quantidade),
+      };
+    });
 
-    const taxaFrete = await prisma.taxaFrete.findUnique({ where: { bairro } });
+    const taxaFrete = await tx.taxaFrete.findFirst({
+      where: { bairro: { equals: bairro, mode: 'insensitive' } },
+    });
     if (!taxaFrete) {
-      return res.status(400).json({ error: `Taxa de frete não disponível para o bairro ${bairro}` });
+      throw new AppError(
+        400,
+        `Taxa de entrega não disponível para o bairro ${bairro}`,
+        'FRETE_INDISPONIVEL'
+      );
     }
 
-    const subtotal = round2(itensCalculados.reduce((acc, item) => acc + item.subtotal, 0));
+    const subtotal = round2(linhas.reduce((acc, linha) => acc + linha.subtotal, 0));
     const frete = taxaFrete.valor;
     const total = round2(subtotal + frete);
 
-    const pedido = await prisma.pedido.create({
+    return tx.pedido.create({
       data: {
         clienteId: user.id,
         endereco,
-        bairro,
+        bairro: taxaFrete.bairro,
         subtotal,
         frete,
         total,
         status: 'PENDENTE',
-        itens: { create: itensCalculados },
+        itens: { create: linhas },
       },
       include: { itens: true },
     });
+  });
 
-    // Preparar conteúdo das notificações
-    const itensResumo = pedido.itens
-      .map(i => `${i.quantidade}x ${i.produtoNome} – ${(i.quantidade * i.precoUnitario).toFixed(2)} MT`)
-      .join('\n');
-    const dataHora = new Date().toLocaleString('pt-PT');
+  void notificarPedido(pedido, {
+    clienteNome: user.nome,
+    clienteEmail: user.email,
+    telefone,
+    endereco,
+    bairro: pedido.bairro,
+    tempoEntrega,
+  }).catch((error) => console.error('Erro ao notificar pedido:', error));
 
-    // Notificações WhatsApp em segundo plano
-    const notificacoes = async () => {
-      try {
-        const adminWhats = process.env.NOTIFICATION_WHATSAPP_TO;
-        const promises = [];
+  res.status(201).json(pedido);
+});
 
-        // Mensagem para o administrador (detalhada)
-        if (adminWhats) {
-          const msgAdmin = 
-`Novo Pedido #${pedido.id}
-
-Cliente: ${clienteNome}
-Telefone: ${telefoneFormatado}
-E-mail: ${clienteEmail}
-Endereço: ${endereco}
-Bairro: ${bairro}
-
-Itens:
-${itensResumo}
-
-Subtotal: ${pedido.subtotal.toFixed(2)} MT
-Frete: ${pedido.frete.toFixed(2)} MT
-Total: ${pedido.total.toFixed(2)} MT
-
-Status: ${pedido.status}
-Data/Hora: ${dataHora}`;
-          promises.push(enviarWhatsApp(adminWhats, msgAdmin));
-        }
-
-        // Mensagem para o cliente (resumida, sem emojis)
-        if (telefoneFormatado) {
-          const msgCliente = 
-`Pedido #${pedido.id} confirmado
-
-Olá ${clienteNome}, recebemos o seu pedido.
-
-Itens:
-${itensResumo}
-
-Total: ${pedido.total.toFixed(2)} MT
-Tempo estimado: ${tempoEntrega || 'a definir'}
-
-Obrigado por escolher o Origens do Sabor.`;
-          promises.push(enviarWhatsApp(telefoneFormatado, msgCliente));
-        }
-
-        promises.push(sendPedidoEmail({
-          id: pedido.id,
-          clienteNome,
-          endereco,
-          bairro,
-          subtotal: pedido.subtotal,
-          frete: pedido.frete,
-          total: pedido.total,
-          status: pedido.status,
-          itens: pedido.itens.map((item) => ({
-            nome: item.produtoNome,
-            quantidade: item.quantidade,
-            precoUnitario: item.precoUnitario,
-          })),
-        }));
-
-        await Promise.allSettled(promises);
-        console.log(`Notificações do pedido #${pedido.id} processadas em segundo plano.`);
-      } catch (err) {
-        console.error(`Erro ao processar notificações do pedido #${pedido.id}:`, err);
-      }
-    };
-
-    notificacoes();
-
-    res.status(201).json(pedido);
-  } catch (error) {
-    console.error('Erro ao criar pedido:', error);
-    res.status(500).json({ error: 'Erro interno ao criar pedido' });
-  }
-};
-
-// ==================== AGENTE ====================
-export const listarPedidosAgente = async (req: Request, res: Response) => {
+export const listarPedidosAgente = asyncHandler(async (req: Request, res: Response) => {
   const agenteId = (req as any).user.id;
-  try {
-    const pedidos = await prisma.pedido.findMany({
-      where: { agenteId, status: { not: 'ENTREGUE' } },
-      orderBy: { dataPedido: 'asc' },
-      include: { cliente: { select: { nome: true } }, itens: true },
-    });
-    const formatted = pedidos.map(p => ({
-      id: p.id,
-      clienteNome: p.cliente.nome,
-      endereco: p.endereco,
-      total: p.total,
-      status: p.status,
-      itens: p.itens,
-      bairro: p.bairro,
-    }));
-    res.json(formatted);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao listar pedidos do agente' });
-  }
-};
+  const pedidos = await prisma.pedido.findMany({
+    where: {
+      agenteId,
+      status: { notIn: ['ENTREGUE', 'CANCELADO'] },
+    },
+    orderBy: { dataPedido: 'asc' },
+    include: { cliente: { select: { nome: true } }, itens: true },
+  });
 
-export const marcarEntregue = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const agenteId = (req as any).user.id;
-  try {
-    const pedido = await prisma.pedido.findUnique({ where: { id: Number(id) } });
-    if (!pedido) return res.status(404).json({ error: 'Pedido não encontrado' });
-    if (pedido.agenteId !== agenteId) return res.status(403).json({ error: 'Não autorizado' });
-    const updated = await prisma.pedido.update({
-      where: { id: Number(id) },
-      data: { status: 'ENTREGUE' },
-    });
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao marcar como entregue' });
-  }
-};
+  res.json(
+    pedidos.map((pedido) => ({
+      id: pedido.id,
+      clienteNome: pedido.cliente.nome,
+      endereco: pedido.endereco,
+      total: pedido.total,
+      status: pedido.status,
+      itens: pedido.itens,
+      bairro: pedido.bairro,
+    }))
+  );
+});
 
-// ==================== ADMIN ====================
-export const listarTodosPedidos = async (req: Request, res: Response) => {
-  try {
-    const pedidos = await prisma.pedido.findMany({
-      include: { cliente: { select: { nome: true } }, agente: { select: { nome: true } }, itens: true },
-      orderBy: { dataPedido: 'desc' },
-    });
-    res.json(pedidos);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao listar pedidos' });
-  }
-};
+export const marcarEntregue = asyncHandler(async (req: Request, res: Response) => {
+  const id = parseId(req.params.id);
+  const user = (req as any).user;
 
-export const atualizarStatusPedido = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  try {
-    const pedido = await prisma.pedido.update({
-      where: { id: Number(id) },
-      data: { status },
-    });
-    res.json(pedido);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao atualizar status' });
+  const pedido = await prisma.pedido.findUnique({ where: { id } });
+  if (!pedido) throw new AppError(404, 'Pedido não encontrado', 'NAO_ENCONTRADO');
+  if (pedido.status === 'ENTREGUE') return res.json({ success: true });
+  if (pedido.status === 'CANCELADO') {
+    throw new AppError(409, 'O pedido está cancelado', 'ESTADO_INVALIDO');
   }
-};
+  if (user.role !== 'ADMIN' && pedido.agenteId !== user.id) {
+    throw new AppError(403, 'Este pedido não está atribuído a si', 'NAO_AUTORIZADO');
+  }
 
-export const listarAgentes = async (req: Request, res: Response) => {
-  try {
-    const agentes = await prisma.usuario.findMany({
-      where: { role: 'AGENTE', ativo: true },
-      select: { id: true, nome: true, telefone: true, email: true },
-    });
-    res.json(agentes);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao listar agentes' });
-  }
-};
+  await prisma.pedido.update({
+    where: { id },
+    data: { status: 'ENTREGUE' },
+  });
 
-export const atribuirAgente = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { agenteId } = req.body;
-  try {
-    const pedido = await prisma.pedido.update({
-      where: { id: Number(id) },
-      data: { agenteId: Number(agenteId) },
-      include: { cliente: true, itens: true },
-    });
-    console.log(`Pedido #${pedido.id} atribuído ao agente ${agenteId}`);
-    res.json(pedido);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao atribuir agente' });
+  res.json({ success: true });
+});
+
+export const listarTodosPedidos = asyncHandler(async (_req: Request, res: Response) => {
+  const pedidos = await prisma.pedido.findMany({
+    include: {
+      cliente: { select: { nome: true } },
+      agente: { select: { id: true, nome: true } },
+      itens: true,
+    },
+    orderBy: { dataPedido: 'desc' },
+    take: 500,
+  });
+  res.json(pedidos);
+});
+
+export const atualizarStatusPedido = asyncHandler(async (req: Request, res: Response) => {
+  const id = parseId(req.params.id);
+  const status = validarStatus(req.body?.status);
+
+  const pedido = await prisma.pedido.findUnique({ where: { id } });
+  if (!pedido) throw new AppError(404, 'Pedido não encontrado', 'NAO_ENCONTRADO');
+  if (['ENTREGUE', 'CANCELADO'].includes(pedido.status) && pedido.status !== status) {
+    throw new AppError(
+      409,
+      'Não é possível alterar um pedido já concluído ou cancelado',
+      'ESTADO_INVALIDO'
+    );
   }
-};
+
+  const atualizado = await prisma.pedido.update({
+    where: { id },
+    data: { status },
+  });
+
+  res.json(atualizado);
+});
+
+export const listarAgentes = asyncHandler(async (_req: Request, res: Response) => {
+  const agentes = await prisma.usuario.findMany({
+    where: { role: 'AGENTE', ativo: true },
+    select: { id: true, nome: true, telefone: true, email: true },
+    orderBy: { nome: 'asc' },
+  });
+  res.json(agentes);
+});
+
+export const atribuirAgente = asyncHandler(async (req: Request, res: Response) => {
+  const id = parseId(req.params.id);
+  const agenteId = validarInteiro(req.body?.agenteId, 'Agente', { min: 1 });
+
+  const pedido = await prisma.pedido.findUnique({ where: { id } });
+  if (!pedido) throw new AppError(404, 'Pedido não encontrado', 'NAO_ENCONTRADO');
+  if (['ENTREGUE', 'CANCELADO'].includes(pedido.status)) {
+    throw new AppError(
+      409,
+      'Não é possível atribuir um agente a um pedido concluído ou cancelado',
+      'ESTADO_INVALIDO'
+    );
+  }
+
+  const agente = await prisma.usuario.findFirst({
+    where: { id: agenteId, role: 'AGENTE', ativo: true },
+    select: { id: true },
+  });
+  if (!agente) {
+    throw new AppError(400, 'Agente inválido ou inativo', 'AGENTE_INVALIDO');
+  }
+
+  const atualizado = await prisma.pedido.update({
+    where: { id },
+    data: { agenteId },
+    include: { cliente: true, itens: true },
+  });
+
+  res.json(atualizado);
+});

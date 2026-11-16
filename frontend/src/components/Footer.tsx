@@ -1,187 +1,149 @@
-import { useNavigate } from 'react-router-dom';
-import { FaInstagram, FaFacebook, FaWhatsapp, FaArrowUp } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import {
   FiMapPin,
   FiPhone,
   FiMail,
   FiClock,
-  FiBookOpen,
-  FiCalendar,
-  FiClipboard,
-  FiUser,
+  FiArrowUpRight,
+  FiInstagram,
+  FiFacebook,
 } from 'react-icons/fi';
-import { useAuth } from '../contexts/AuthContext';
+import { FaWhatsapp } from 'react-icons/fa';
+import { RESTAURANTE } from '../data/restaurante';
 
 export default function Footer() {
-  const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleProtectedClick = (path: string) => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    } else {
-      navigate(path);
-    }
-  };
-
   return (
-    <footer className="relative bg-gradient-to-br from-secundaria to-primaria text-white pt-16 pb-6">
-      <div className="container-custom px-4 mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
-          {/* Logo e descrição */}
-          <div className="space-y-4">
-            <h2 className="text-3xl font-bold tracking-tight">Origens do Sabor</h2>
-            <p className="text-gray-200 leading-relaxed">
-              Sabor, qualidade e tradição. Desde 2024 servindo o melhor da gastronomia moçambicana com todo o carinho.
+    <footer className="bg-secundaria text-creme">
+      <div className="container-custom py-14 sm:py-16">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1.2fr_1fr]">
+          <div>
+            <p className="font-display text-2xl">{RESTAURANTE.nome}</p>
+            <p className="mt-1 text-[0.62rem] uppercase tracking-[0.28em] text-creme/50">
+              {RESTAURANTE.descricao}
             </p>
-            <div className="flex gap-4 text-gray-300">
+            <p className="mt-5 max-w-xs text-sm leading-relaxed text-creme/70">
+              Cozinha moçambicana e pratos da casa, servidos com cuidado em
+              Chimoio. À mesa, para levar ou para reservar.
+            </p>
+            <div className="mt-6 flex items-center gap-3">
               <a
-                href="https://www.instagram.com/origens_do_sabor_restaurante_/"
+                href={RESTAURANTE.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-white transition-transform hover:scale-110 inline-block"
-                aria-label="Instagram"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-creme/20 text-creme/75 transition-colors hover:border-dourado hover:text-dourado"
+                aria-label="Instagram do Origens do Sabor"
               >
-                <FaInstagram size={24} />
+                <FiInstagram className="h-4 w-4" aria-hidden="true" />
               </a>
               <a
-                href="https://web.facebook.com/p/Origens-do-sabor-61572114920143"
+                href={RESTAURANTE.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-white transition-transform hover:scale-110 inline-block"
-                aria-label="Facebook"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-creme/20 text-creme/75 transition-colors hover:border-dourado hover:text-dourado"
+                aria-label="Facebook do Origens do Sabor"
               >
-                <FaFacebook size={24} />
+                <FiFacebook className="h-4 w-4" aria-hidden="true" />
               </a>
               <a
-                href="https://wa.me/258848424621"
+                href={RESTAURANTE.whatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-white transition-transform hover:scale-110 inline-block"
-                aria-label="WhatsApp"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-creme/20 text-creme/75 transition-colors hover:border-dourado hover:text-dourado"
+                aria-label="WhatsApp do Origens do Sabor"
               >
-                <FaWhatsapp size={24} />
+                <FaWhatsapp className="h-4 w-4" aria-hidden="true" />
               </a>
             </div>
           </div>
 
-          {/* Links rápidos (protegidos) */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4 relative inline-block after:content-[''] after:absolute after:bottom-[-8px] after:left-0 after:w-12 after:h-0.5 after:bg-primaria">
-              Navegação
-            </h3>
-            <ul className="space-y-2 text-gray-200">
-              <li>
-                <button
-                  onClick={() => handleProtectedClick('/cardapio')}
-                  className="hover:text-white transition-colors flex items-center gap-2 w-full text-left cursor-pointer"
-                >
-                  <FiBookOpen /> Cardápio
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleProtectedClick('/reservar-mesa')}
-                  className="hover:text-white transition-colors flex items-center gap-2 w-full text-left cursor-pointer"
-                >
-                  <FiCalendar /> Reservar Mesa
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleProtectedClick('/minhas-reservas')}
-                  className="hover:text-white transition-colors flex items-center gap-2 w-full text-left cursor-pointer"
-                >
-                  <FiClipboard /> Minhas Reservas
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleProtectedClick('/perfil')}
-                  className="hover:text-white transition-colors flex items-center gap-2 w-full text-left cursor-pointer"
-                >
-                  <FiUser /> Meu Perfil
-                </button>
-              </li>
+          <nav aria-label="Links do rodapé">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-dourado">
+              Explorar
+            </h2>
+            <ul className="mt-5 space-y-3">
+              <li><Link to="/cardapio" className="footer-link">Menu</Link></li>
+              <li><Link to="/reservar-mesa" className="footer-link">Reservar mesa</Link></li>
+              <li><Link to="/minhas-reservas" className="footer-link">As minhas reservas</Link></li>
+              <li><Link to="/meus-pedidos" className="footer-link">Os meus pedidos</Link></li>
+              <li><Link to="/contacto" className="footer-link">Contacto</Link></li>
+              <li><Link to="/privacidade" className="footer-link">Privacidade</Link></li>
             </ul>
-          </div>
+          </nav>
 
-          {/* Contactos */}
           <div>
-            <h3 className="text-xl font-semibold mb-4 relative inline-block after:content-[''] after:absolute after:bottom-[-8px] after:left-0 after:w-12 after:h-0.5 after:bg-primaria">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-dourado">
               Contactos
-            </h3>
-            <ul className="space-y-3 text-gray-200">
-              <li className="flex items-center gap-3">
-                <FiPhone className="flex-shrink-0" /> 
-                <span>+258 84 842 4621</span>
+            </h2>
+            <ul className="mt-5 space-y-4 text-sm text-creme/70">
+              <li className="flex gap-3">
+                <FiMapPin className="mt-0.5 h-4 w-4 shrink-0 text-creme/45" aria-hidden="true" />
+                <span>{RESTAURANTE.endereco}</span>
               </li>
-              <li className="flex items-center gap-3">
-                <FiPhone className="flex-shrink-0" /> 
-                <span>+258 86 015 1122</span>
+              <li className="flex gap-3">
+                <FiPhone className="mt-0.5 h-4 w-4 shrink-0 text-creme/45" aria-hidden="true" />
+                <span>
+                  <a href={RESTAURANTE.telefonePrincipalLink} className="footer-link block">
+                    {RESTAURANTE.telefonePrincipal}
+                  </a>
+                  <a href={RESTAURANTE.telefoneSecundarioLink} className="footer-link block">
+                    {RESTAURANTE.telefoneSecundario}
+                  </a>
+                </span>
               </li>
-              <li className="flex items-center gap-3">
-                <FiMail className="flex-shrink-0" /> 
-                <span>origensdosabor@gmail.com</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <FiMapPin className="flex-shrink-0" /> 
-                <span>Rua Cidade de Lichinga, em frente ao Tribunal Judicial, Chimoio</span>
+              <li className="flex gap-3">
+                <FiMail className="mt-0.5 h-4 w-4 shrink-0 text-creme/45" aria-hidden="true" />
+                <a href={RESTAURANTE.emailLink} className="footer-link break-all">
+                  {RESTAURANTE.email}
+                </a>
               </li>
             </ul>
           </div>
 
-          {/* Horário e local */}
           <div>
-            <h3 className="text-xl font-semibold mb-4 relative inline-block after:content-[''] after:absolute after:bottom-[-8px] after:left-0 after:w-12 after:h-0.5 after:bg-primaria">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-dourado">
               Horário
-            </h3>
-            <ul className="space-y-3 text-gray-200">
-              <li className="flex items-center gap-3">
-                <FiClock className="flex-shrink-0" />
-                <div>
-                  <p>Segunda a Sábado: 07:30 - 22h</p>
-                  <p>Domingo: 09h - 22h</p>
-                </div>
-              </li>
+            </h2>
+            <ul className="mt-5 space-y-3 text-sm text-creme/70">
+              {RESTAURANTE.horarios.map((horario) => (
+                <li key={horario.dias} className="flex gap-3">
+                  <FiClock className="mt-0.5 h-4 w-4 shrink-0 text-creme/45" aria-hidden="true" />
+                  <span>
+                    <span className="block text-creme/55">{horario.dias}</span>
+                    {horario.horas}
+                  </span>
+                </li>
+              ))}
             </ul>
-            <div className="mt-6">
-              <h4 className="font-medium mb-2">Como chegar</h4>
-              <a
-                href="https://maps.google.com/?q=Origens+do+Sabor+Chimoio"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-full transition text-sm"
-              >
-                Ver no Google Maps
-              </a>
-            </div>
+            <a
+              href={RESTAURANTE.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-dourado hover:text-white"
+            >
+              Como chegar
+              <FiArrowUpRight className="h-4 w-4" aria-hidden="true" />
+            </a>
           </div>
         </div>
 
-        {/* Linha divisória e direitos */}
-        <div className="border-t border-white/20 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-300 text-sm">
+        <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-creme/15 pt-6 text-xs text-creme/45 sm:flex-row sm:items-center">
           <p>
-            &copy; {new Date().getFullYear()} Origens do Sabor – Todos os direitos reservados.
+            © {new Date().getFullYear()} {RESTAURANTE.nome}. Todos os direitos
+            reservados.
           </p>
-          <p className="text-center">
-            Desenvolvido por <strong className="text-yellow">Jose Da Silva</strong> <a href="https://wa.me/258855712857" className="text-white hover:underline">+258 85 57 12 857</a>
+          <p>
+            Concebido e desenvolvido por{" "}
+            <a
+              href="https://wa.me/258855712857"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-creme/70 hover:text-creme"
+            >
+              José Da Silva
+            </a>
           </p>
         </div>
       </div>
-
-      {/* Botão Voltar ao Topo */}
-      <button
-        onClick={scrollToTop}
-        className="fixed bottom-6 right-6 bg-primaria hover:bg-secundaria text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 z-40 focus:outline-none"
-        aria-label="Voltar ao topo"
-      >
-        <FaArrowUp size={20} />
-      </button>
     </footer>
   );
 }

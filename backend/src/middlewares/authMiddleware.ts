@@ -1,20 +1,23 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { prisma } from '../config/prisma';
-const JWT_SECRET = process.env.JWT_SECRET!;
+import { NextFunction, Request, Response } from 'express';
+import { carregarUtilizador } from './optionalAuth';
 
-export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: 'Token não fornecido' });
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number; role: string };
-    const user = await prisma.usuario.findUnique({ where: { id: decoded.id } });
-    if (!user) return res.status(401).json({ error: 'Utilizador não encontrado' });
-    if (!user.ativo) return res.status(403).json({ error: 'Conta desativada' });
-    (req as any).user = user;
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Token inválido' });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Autenticação necessária', code: 'NAO_AUTENTICADO' });
   }
-};
+
+  try {
+    const user = await carregarUtilizador(authHeader.slice(7));
+    if (!user) {
+      return res.status(401).json({ error: 'Sessão inválida', code: 'TOKEN_INVALIDO' });
+    }
+    if (!user.ativo) {
+      return res.status(403).json({ error: 'Conta desativada', code: 'CONTA_DESATIVADA' });
+    }
+    (req as any).user = user;
+    return next();
+  } catch {
+    return res.status(401).json({ error: 'Sessão inválida', code: 'TOKEN_INVALIDO' });
+  }
+}

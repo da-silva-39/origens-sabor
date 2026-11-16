@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+import { nomeExibicao } from '../data/produtos';
 import { toast } from 'react-hot-toast';
 import {
   FiMapPin,
@@ -248,7 +249,7 @@ export default function AgenteDashboard() {
                   <p className="flex items-center gap-1"><FiMapPin /> <strong>Endereço:</strong> {pedido.endereco} - {pedido.bairro}</p>
                   <p><strong>Itens:</strong></p>
                   <ul className="list-disc list-inside text-sm text-gray-600 ml-2">
-                    {pedido.itens.map((item, idx) => (<li key={idx}>{item.quantidade}x {item.produtoNome}</li>))}
+                    {pedido.itens.map((item, idx) => (<li key={idx}>{item.quantidade}x {nomeExibicao(item.produtoNome)}</li>))}
                   </ul>
                   <p><strong>Total:</strong> {pedido.total.toFixed(2)} MT</p>
                   <div className="flex justify-between items-center pt-2">

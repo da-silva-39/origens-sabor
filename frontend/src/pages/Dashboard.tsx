@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 
-import { FiPackage, FiClock, FiDollarSign, FiShoppingCart, FiCoffee, FiArrowRight, FiCalendar, FiList, FiPhone } from 'react-icons/fi';
+import { FiPackage, FiClock, FiDollarSign, FiShoppingCart, FiCoffee, FiArrowRight } from 'react-icons/fi';
 import { HiOutlineEmojiHappy } from 'react-icons/hi';
 
 interface Pedido {
@@ -203,7 +202,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {pedidos.slice(0, 5).map((pedido, idx) => (
+                {pedidos.slice(0, 5).map((pedido) => (
                   <div
                     key={pedido.id}
                     className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-4 last:border-0 gap-3 hover:bg-gray-50 p-3 rounded-xl transition"

@@ -13,6 +13,9 @@ interface Produto {
   preco: number;
   categoria: string;
   imagemUrl: string | null;
+  disponivel: boolean;
+  destaque: boolean;
+  alergenios: string | null;
 }
 
 export default function AdminProdutos() {
@@ -25,6 +28,9 @@ export default function AdminProdutos() {
     descricao: '',
     preco: '',
     categoria: '',
+    alergenios: '',
+    disponivel: true,
+    destaque: false,
     imagem: null as File | null,
   });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -54,12 +60,24 @@ export default function AdminProdutos() {
         descricao: produto.descricao || '',
         preco: produto.preco.toString(),
         categoria: produto.categoria,
+        alergenios: produto.alergenios || '',
+        disponivel: produto.disponivel !== false,
+        destaque: Boolean(produto.destaque),
         imagem: null,
       });
       setPreviewUrl(produto.imagemUrl);
     } else {
       setEditando(null);
-      setForm({ nome: '', descricao: '', preco: '', categoria: '', imagem: null });
+      setForm({
+        nome: '',
+        descricao: '',
+        preco: '',
+        categoria: '',
+        alergenios: '',
+        disponivel: true,
+        destaque: false,
+        imagem: null,
+      });
       setPreviewUrl(null);
     }
     setModalAberto(true);
@@ -86,6 +104,9 @@ export default function AdminProdutos() {
     formData.append('descricao', form.descricao);
     formData.append('preco', form.preco);
     formData.append('categoria', form.categoria);
+    formData.append('alergenios', form.alergenios);
+    formData.append('disponivel', String(form.disponivel));
+    formData.append('destaque', String(form.destaque));
     if (form.imagem) formData.append('imagem', form.imagem);
 
     setCarregando(true);
@@ -145,6 +166,7 @@ export default function AdminProdutos() {
               <th className="p-3 text-left">Nome</th>
               <th className="p-3 text-left">Preço</th>
               <th className="p-3 text-left">Categoria</th>
+              <th className="p-3 text-left">Estado</th>
               <th className="p-3 text-left">Ações</th>
             </tr>
           </thead>
@@ -165,6 +187,18 @@ export default function AdminProdutos() {
                 <td className="p-3 font-medium">{p.nome}</td>
                 <td className="p-3">{p.preco.toFixed(2)} MT</td>
                 <td className="p-3">{p.categoria}</td>
+                <td className="p-3">
+                  <div className="flex flex-wrap gap-1">
+                    <span className={`px-2 py-1 text-xs font-medium ${p.disponivel !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>
+                      {p.disponivel !== false ? 'Disponível' : 'Esgotado'}
+                    </span>
+                    {p.destaque && (
+                      <span className="bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">
+                        Destaque
+                      </span>
+                    )}
+                  </div>
+                </td>
                 <td className="p-3 space-x-2">
                  <button
   onClick={() => abrirModal(p)}
@@ -240,6 +274,36 @@ export default function AdminProdutos() {
                   className="w-full border rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primaria"
                   required
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Alergénios (opcional)</label>
+                <input
+                  name="alergenios"
+                  value={form.alergenios}
+                  onChange={handleChange}
+                  placeholder="Ex: contém glúten, leite, ovo"
+                  className="w-full border rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primaria"
+                />
+              </div>
+              <div className="flex flex-wrap gap-5 py-1">
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    checked={form.disponivel}
+                    onChange={(e) => setForm({ ...form, disponivel: e.target.checked })}
+                    className="h-4 w-4"
+                  />
+                  Disponível no menu
+                </label>
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    checked={form.destaque}
+                    onChange={(e) => setForm({ ...form, destaque: e.target.checked })}
+                    className="h-4 w-4"
+                  />
+                  Destaque na página inicial
+                </label>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Imagem (opcional)</label>

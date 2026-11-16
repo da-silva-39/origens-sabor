@@ -3,17 +3,108 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-fundo text-texto font-sans;
+    @apply bg-fundo text-texto font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display text-secundaria;
+    text-wrap: balance;
+  }
+
+  ::selection {
+    @apply bg-dourado/30 text-carvao;
+  }
+
+  :focus-visible {
+    outline: 2px solid theme("colors.dourado");
+    outline-offset: 3px;
   }
 }
 
 @layer components {
-  .btn-primary {
-    @apply bg-primaria text-white px-6 py-2 rounded-full hover:bg-secundaria transition duration-300;
-  }
   .container-custom {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-conteudo px-5 sm:px-8 lg:px-10;
+  }
+
+  .section {
+    @apply py-16 sm:py-20 lg:py-24;
+  }
+
+  .eyebrow {
+    @apply text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-terracota;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-sm px-6 py-3 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-terracota text-white hover:bg-secundaria;
+  }
+
+  .btn-secondary {
+    @apply btn border border-secundaria/25 bg-transparent text-secundaria hover:border-secundaria hover:bg-secundaria hover:text-creme;
+  }
+
+  .btn-light {
+    @apply btn bg-creme text-secundaria hover:bg-white;
+  }
+
+  .btn-ghost {
+    @apply btn px-3 py-2 text-secundaria hover:text-terracota;
+  }
+
+  .btn-sm {
+    @apply px-4 py-2 text-xs;
+  }
+
+  .input {
+    @apply w-full rounded-sm border border-carvao/20 bg-white px-4 py-3 text-sm text-texto placeholder:text-carvao/45 focus:border-secundaria focus:outline-none focus:ring-1 focus:ring-secundaria;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-carvao/70;
+  }
+
+  .card {
+    @apply border border-carvao/10 bg-white;
+  }
+
+  .nav-link {
+    @apply text-sm font-medium text-carvao/80 transition-colors hover:text-terracota;
+  }
+
+  .footer-link {
+    @apply text-sm text-creme/70 transition-colors hover:text-creme;
+  }
+
+  .prose-restaurante p {
+    @apply leading-relaxed text-carvao/75;
+  }
+
+  .divider {
+    @apply h-px w-14 bg-dourado;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -29,7 +120,4 @@
 }
 .animate-enter {
   animation: slideInUp 0.3s ease-out;
-}
-.animate-leave {
-  animation: slideOutDown 0.2s ease-in;
 }

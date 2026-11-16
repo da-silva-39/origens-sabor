@@ -4,6 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
+import RotaProtegida from './components/RotaProtegida';
 import Home from './pages/Home';
 
 const Login = lazy(() => import('./pages/Login'));
@@ -28,6 +30,8 @@ const Manual = lazy(() => import('./pages/Manual'));
 const ValidarReserva = lazy(() => import('./pages/ValidarReserva'));
 const MeusPedidos = lazy(() => import('./pages/MeusPedidos'));
 const AdminMesas = lazy(() => import('./pages/AdminMesas'));
+const Privacidade = lazy(() => import('./pages/Privacidade'));
+const PaginaNaoEncontrada = lazy(() => import('./pages/PaginaNaoEncontrada'));
 
 function PageLoader() {
   return (
@@ -41,33 +45,36 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Navbar />
-        <main className="min-h-screen">
+        <main id="conteudo-principal" className="min-h-screen">
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/registro" element={<Registro />} />
               <Route path="/auth/google/callback" element={<GoogleCallback />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/agente/dashboard" element={<AgenteDashboard />} />
-              <Route path="/admin/usuarios" element={<AdminUsuarios />} />
-              <Route path="/perfil" element={<Perfil />} />
-              <Route path="/admin/produtos" element={<AdminProdutos />} />
-              <Route path="/admin/pedidos" element={<AdminPedidos />} />
+              <Route path="/dashboard" element={<RotaProtegida><Dashboard /></RotaProtegida>} />
+              <Route path="/admin/dashboard" element={<RotaProtegida roles={['ADMIN']}><AdminDashboard /></RotaProtegida>} />
+              <Route path="/agente/dashboard" element={<RotaProtegida roles={['AGENTE', 'ADMIN']}><AgenteDashboard /></RotaProtegida>} />
+              <Route path="/admin/usuarios" element={<RotaProtegida roles={['ADMIN']}><AdminUsuarios /></RotaProtegida>} />
+              <Route path="/perfil" element={<RotaProtegida><Perfil /></RotaProtegida>} />
+              <Route path="/admin/produtos" element={<RotaProtegida roles={['ADMIN']}><AdminProdutos /></RotaProtegida>} />
+              <Route path="/admin/pedidos" element={<RotaProtegida roles={['ADMIN']}><AdminPedidos /></RotaProtegida>} />
               <Route path="/cardapio" element={<Cardapio />} />
               <Route path="/carrinho" element={<Carrinho />} />
-              <Route path="/finalizar" element={<Finalizar />} />
-              <Route path="/admin/monitorar-agente/:id" element={<AdminMonitorarAgente />} />
+              <Route path="/finalizar" element={<RotaProtegida><Finalizar /></RotaProtegida>} />
+              <Route path="/admin/monitorar-agente/:id" element={<RotaProtegida roles={['ADMIN']}><AdminMonitorarAgente /></RotaProtegida>} />
               <Route path="/reservar-mesa" element={<ReservarMesa />} />
-              <Route path="/minhas-reservas" element={<MinhasReservas />} />
-              <Route path="/admin/reservas" element={<AdminReservas />} />
+              <Route path="/minhas-reservas" element={<RotaProtegida><MinhasReservas /></RotaProtegida>} />
+              <Route path="/admin/reservas" element={<RotaProtegida roles={['ADMIN']}><AdminReservas /></RotaProtegida>} />
               <Route path="/contacto" element={<Contacto />} />
               <Route path="/manual" element={<Manual />} />
               <Route path="/reservas/validar/:id" element={<ValidarReserva />} />
-              <Route path="/meus-pedidos" element={<MeusPedidos />} />
-              <Route path="/admin/mesas" element={<AdminMesas />} />
+              <Route path="/meus-pedidos" element={<RotaProtegida><MeusPedidos /></RotaProtegida>} />
+              <Route path="/admin/mesas" element={<RotaProtegida roles={['ADMIN']}><AdminMesas /></RotaProtegida>} />
+              <Route path="/privacidade" element={<Privacidade />} />
+              <Route path="*" element={<PaginaNaoEncontrada />} />
             </Routes>
           </Suspense>
         </main>

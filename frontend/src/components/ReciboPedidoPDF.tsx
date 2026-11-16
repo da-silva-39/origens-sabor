@@ -1,9 +1,10 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
 // Cores institucionais
-const COR_PRIMARIA = '#ff6b35';   // laranja
-const COR_SECUNDARIA = '#2c3e50'; // azul escuro
-const COR_CINZA = '#555555';
+const COR_PRIMARIA = '#A9502F';
+const COR_SECUNDARIA = '#1E3A2B';
+const COR_CINZA = '#5C574E';
+const COR_DOURADO = '#C19A5B';
 
 // URL da logo no Cloudinary
 const LOGO_URL = 'https://res.cloudinary.com/dx3rzepdc/image/upload/v1782072018/logo_zhzabn.jpg';
@@ -19,7 +20,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 2,
-    borderBottomColor: COR_PRIMARIA,
+    borderBottomColor: COR_DOURADO,
     paddingBottom: 15,
     marginBottom: 25,
   },
@@ -216,6 +217,7 @@ export const ReciboPedidoPDF = ({ pedido, cliente }: Props) => {
         <View style={styles.rodape}>
           <Text>Obrigado pela preferência!</Text>
           <Text>Contactos: +258 84 842 4621 | +258 86 015 1122</Text>
+          <Text>origensdosabor@gmail.com · Chimoio, Moçambique</Text>
           <Text>© Origens do Sabor – Todos os direitos reservados</Text>
         </View>
       </Page>

@@ -1,10 +1,83 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image" href="/favicon.jpg" />
+    <link rel="icon" type="image/jpeg" href="/logo.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Origens do Sabor</title>
+    <meta name="theme-color" content="#1E3A2B" />
+
+    <title>Origens do Sabor — Restaurante &amp; Bar em Chimoio</title>
+    <meta
+      name="description"
+      content="Origens do Sabor, restaurante e bar em Chimoio. Cozinha moçambicana, pratos da casa, takeaway e reservas de mesa. Rua Cidade de Lichinga, em frente ao Tribunal Judicial."
+    />
+    <link rel="canonical" href="https://origens-sabor.vercel.app/" />
+
+    <meta property="og:type" content="restaurant" />
+    <meta property="og:site_name" content="Origens do Sabor" />
+    <meta property="og:title" content="Origens do Sabor — Restaurante &amp; Bar em Chimoio" />
+    <meta
+      property="og:description"
+      content="Cozinha moçambicana, pratos da casa e uma mesa à sua espera em Chimoio. Consulte o menu e reserve online."
+    />
+    <meta property="og:url" content="https://origens-sabor.vercel.app/" />
+    <meta property="og:image" content="https://origens-sabor.vercel.app/prato%20apresentacao.jpg" />
+    <meta property="og:locale" content="pt_MZ" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Origens do Sabor — Restaurante &amp; Bar em Chimoio" />
+    <meta
+      name="twitter:description"
+      content="Cozinha moçambicana, pratos da casa e uma mesa à sua espera em Chimoio."
+    />
+    <meta name="twitter:image" content="https://origens-sabor.vercel.app/prato%20apresentacao.jpg" />
+
+    <link rel="preload" as="image" href="/imagens-web/hero.webp" fetchpriority="high" />
+    <link rel="preconnect" href="https://origens-sabor-backend.onrender.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Restaurant",
+        "name": "Origens do Sabor",
+        "description": "Restaurante e bar em Chimoio, Moçambique. Cozinha moçambicana, pratos da casa e takeaway.",
+        "url": "https://origens-sabor.vercel.app/",
+        "image": "https://origens-sabor.vercel.app/prato%20apresentacao.jpg",
+        "telephone": ["+258848424621", "+258860151122"],
+        "email": "origensdosabor@gmail.com",
+        "servesCuisine": ["Moçambicana", "Portuguesa"],
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Rua Cidade de Lichinga, em frente ao Tribunal Judicial",
+          "addressLocality": "Chimoio",
+          "addressCountry": "MZ"
+        },
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            "opens": "07:30",
+            "closes": "22:00"
+          },
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": "Sunday",
+            "opens": "09:00",
+            "closes": "22:00"
+          }
+        ],
+        "sameAs": [
+          "https://www.instagram.com/origens_do_sabor_restaurante_/",
+          "https://web.facebook.com/p/Origens-do-sabor-61572114920143"
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

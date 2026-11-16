@@ -1,270 +1,413 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { FaWhatsapp, FaInstagram, FaFacebook } from "react-icons/fa";
-import { FiPhone, FiMail, FiMapPin, FiClock } from "react-icons/fi";
+import { useEffect, useState } from "react";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { Link } from "react-router-dom";
+import {
+  FiArrowRight,
+  FiCalendar,
+  FiClock,
+  FiMapPin,
+  FiPhone,
+  FiArrowUpRight,
+} from "react-icons/fi";
+import { FaWhatsapp } from "react-icons/fa";
+import api from "../services/api";
+import { RESTAURANTE } from "../data/restaurante";
+import { GALERIA, imagemDoProduto } from "../data/imagens";
+import { descricaoExibicao, nomeExibicao, rotuloCategoria } from "../data/produtos";
 
-const slides = [
-  { src: "https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?w=1200", alt: "Ambiente", title: "Bem-vindo ao Origens do Sabor", desc: "Restaurante e Bar Origens do Sabor." },
-  { src: "/pizza cliente.jpg", alt: "Pratos", title: "Visite-nos", desc: "Abertos de segunda a domingo, nos horários abaixo." },
-  { src: "/prato apresentacao 2.jpg", alt: "Chef", title: "Culinária de autor", desc: "Preparado com muito carinho." },
-  { src: "/contacto.jpg", alt: "Momentos", title: "Experiência inesquecível", desc: "Acompanhamos os seus momentos especiais." },
-];
+interface Produto {
+  id: number;
+  nome: string;
+  descricao: string | null;
+  preco: number;
+  categoria: string;
+  imagemUrl: string | null;
+  disponivel?: boolean;
+  destaque?: boolean;
+}
+
+function formatarPreco(valor: number) {
+  return `${new Intl.NumberFormat("pt-MZ", {
+    minimumFractionDigits: Number.isInteger(valor) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(valor)} MT`;
+}
+
+function selecionarDestaques(produtos: Produto[]) {
+  const disponiveis = produtos.filter((p) => p.disponivel !== false);
+  const marcados = disponiveis.filter((p) => p.destaque);
+  const escolhidos: Produto[] = [];
+  const usados = new Set<string>();
+
+  const adicionar = (produto?: Produto) => {
+    if (!produto || escolhidos.length >= 4) return;
+    const base = nomeExibicao(produto.nome).toUpperCase();
+    if (usados.has(base)) return;
+    usados.add(base);
+    escolhidos.push(produto);
+  };
+
+  marcados.forEach(adicionar);
+
+  const categoriasPrioritarias = ["Massas & Pratos", "Peixes", "Entradas", "Hamburguer"];
+
+  categoriasPrioritarias.forEach((categoria) => {
+    const lista = disponiveis.filter((p) => p.categoria === categoria);
+    const comImagem = lista.find((p) => imagemDoProduto(p.nome, p.imagemUrl));
+    adicionar(comImagem || lista[0]);
+  });
+
+  disponiveis.forEach(adicionar);
+
+  return escolhidos.slice(0, 4);
+}
 
 export default function Home() {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const { user, isAuthenticated, loading } = useAuth();
-  const navigate = useNavigate();
+  useDocumentTitle(
+    "Origens do Sabor — Restaurante & Bar em Chimoio",
+    "Cozinha moçambicana, pratos da casa, takeaway e reservas de mesa em Chimoio. Rua Cidade de Lichinga, em frente ao Tribunal Judicial."
+  );
+  const [destaques, setDestaques] = useState<Produto[]>([]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
-    return () => clearInterval(interval);
+    let ativo = true;
+    api
+      .get<Produto[]>("/produtos")
+      .then((res) => {
+        if (ativo) setDestaques(selecionarDestaques(res.data));
+      })
+      .catch(() => {
+        if (ativo) setDestaques([]);
+      });
+    return () => {
+      ativo = false;
+    };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center">Carregando...</div>
-      </div>
-    );
-  }
-
-  const handleProtectedClick = (path: string) => {
-    if (!isAuthenticated) navigate("/login");
-    else navigate(path);
-  };
-
-  const handleManualClick = () => {
-    navigate("/manual");
-  };
-
   return (
-    <>
-      <main>
-        {/* Hero Carrossel */}
-        <div className="relative h-[600px] md:h-[700px] overflow-hidden">
-          {slides.map((slide, idx) => (
-            <div
-              key={idx}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                idx === currentSlide ? "opacity-100" : "opacity-0"
-              }`}
-            >
-              <div className="relative w-full h-full">
-                <img src={slide.src} alt={slide.alt} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/40" />
-              </div>
-              <div className="absolute inset-0 flex flex-col justify-center items-center text-white text-center px-4">
-                <h1 className="text-4xl md:text-6xl font-bold mb-4 animate-fade-in-up">{slide.title}</h1>
-                <p className="text-xl md:text-2xl mb-8 animate-fade-in-up animation-delay-200">{slide.desc}</p>
-                <button
-                  onClick={() => handleProtectedClick("/cardapio")}
-                  className="bg-primaria hover:bg-secundaria px-8 py-3 rounded-full text-lg font-semibold transition transform hover:scale-105 animate-fade-in-up animation-delay-400"
-                >
-                  Ver Cardápio
-                </button>
-              </div>
+    <div>
+      <section className="relative isolate min-h-[78vh] overflow-hidden bg-secundaria sm:min-h-[86vh]">
+        <img
+          src="/imagens-web/hero.webp"
+          alt="Prato servido no Origens do Sabor, em Chimoio"
+          className="absolute inset-0 h-full w-full object-cover"
+          width={1800}
+          height={1200}
+          fetchPriority="high"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-secundaria/90 via-secundaria/60 to-secundaria/20" />
+        <div className="container-custom relative flex min-h-[78vh] flex-col justify-center py-20 sm:min-h-[86vh]">
+          <div className="max-w-2xl text-creme">
+            <p className="eyebrow text-dourado">Chimoio · Moçambique</p>
+            <h1 className="mt-4 font-display text-4xl leading-[1.08] text-creme sm:text-6xl lg:text-7xl">
+              O sabor de casa,
+              <br />
+              à mesa em Chimoio.
+            </h1>
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-creme/80 sm:text-lg">
+              Cozinha moçambicana, pratos da casa e uma mesa à sua espera. Venha
+              comer connosco, leve para casa ou reserve com antecedência.
+            </p>
+            <div className="mt-9 flex flex-wrap items-center gap-3">
+              <Link to="/cardapio" className="btn-light">
+                Ver o menu <FiArrowRight aria-hidden="true" />
+              </Link>
+              <Link
+                to="/reservar-mesa"
+                className="btn border border-creme/35 text-creme hover:border-creme hover:bg-creme hover:text-secundaria"
+              >
+                Reservar mesa
+              </Link>
             </div>
-          ))}
-          <div className="absolute bottom-5 left-0 right-0 flex justify-center gap-2">
-            {slides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentSlide(idx)}
-                className={`w-3 h-3 rounded-full transition-all ${
-                  idx === currentSlide ? "bg-primaria scale-125" : "bg-white/60"
+          </div>
+        </div>
+        <div className="absolute inset-x-0 bottom-0 border-t border-creme/15 bg-secundaria/55 backdrop-blur-sm">
+          <div className="container-custom grid gap-3 py-4 text-xs text-creme/75 sm:grid-cols-3 sm:text-sm">
+            <span className="flex items-center gap-2">
+              <FiClock aria-hidden="true" className="text-dourado" />
+              Seg–Sáb 07:30–22:00 · Dom 09:00–22:00
+            </span>
+            <span className="flex items-center gap-2">
+              <FiMapPin aria-hidden="true" className="text-dourado" />
+              {RESTAURANTE.enderecoCurto}
+            </span>
+            <a
+              href={RESTAURANTE.whatsapp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 transition-colors hover:text-white"
+            >
+              <FaWhatsapp aria-hidden="true" className="text-dourado" />
+              {RESTAURANTE.telefonePrincipal}
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container-custom grid items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-20">
+          <div className="relative">
+            <img
+              src="/imagens-web/contacto.webp"
+              alt="Ambiente do restaurante Origens do Sabor"
+              width={1400}
+              height={1000}
+              loading="lazy"
+              className="aspect-[4/3] w-full object-cover"
+            />
+            <div className="absolute -bottom-8 -right-4 hidden w-52 border border-dourado/50 bg-fundo p-5 sm:block lg:-right-8">
+              <p className="font-display text-2xl text-secundaria">Cozinha com raiz</p>
+              <p className="mt-2 text-xs leading-relaxed text-carvao/65">
+                Ingredientes frescos e pratos preparados na hora, todos os dias.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <p className="eyebrow">A casa</p>
+            <h2 className="mt-3 font-display text-3xl sm:text-4xl">
+              Um restaurante de bairro com alma de casa.
+            </h2>
+            <div className="divider my-6" />
+            <div className="prose-restaurante space-y-4">
+              <p>
+                Estamos no centro de Chimoio, na Rua Cidade de Lichinga, em
+                frente ao Tribunal Judicial. Servimos pequeno-almoço, almoço,
+                jantar e refeições para levar, num ambiente descontraído.
+              </p>
+              <p>
+                Do frango grelhado à chamussa, do peixe da nossa costa aos pratos
+                de massa da casa, a cozinha segue o ritmo do dia e o que há de
+                melhor no mercado.
+              </p>
+            </div>
+            <div className="mt-8 flex flex-wrap gap-x-8 gap-y-4 text-sm">
+              <span className="inline-flex items-center gap-2 text-carvao/70">
+                <FiMapPin aria-hidden="true" className="text-terracota" />
+                {RESTAURANTE.enderecoCurto}
+              </span>
+              <a
+                href={RESTAURANTE.mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-semibold text-terracota hover:text-secundaria"
+              >
+                Ver no mapa <FiArrowUpRight aria-hidden="true" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white/70 py-16 sm:py-20 lg:py-24">
+        <div className="container-custom grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
+          <div>
+            <p className="eyebrow">Do menu</p>
+            <h2 className="mt-3 font-display text-3xl sm:text-4xl">Pratos da casa</h2>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-carvao/65">
+              Uma pequena seleção do que está à mesa hoje. O menu completo é
+              atualizado pela equipa do restaurante.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link to="/cardapio" className="btn-primary">
+                Menu completo <FiArrowRight aria-hidden="true" />
+              </Link>
+              <a
+                href={RESTAURANTE.whatsappReservas}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary"
+              >
+                Encomendar
+              </a>
+            </div>
+          </div>
+
+          <div>
+            {destaques.length > 0 ? (
+              <ul className="divide-y divide-carvao/10 border-y border-carvao/10">
+                {destaques.map((produto) => (
+                  <li key={produto.id} className="flex items-baseline gap-4 py-5">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline gap-x-3">
+                        <h3 className="font-display text-xl text-secundaria">
+                          {nomeExibicao(produto.nome)}
+                        </h3>
+                        <span className="text-[0.65rem] uppercase tracking-[0.16em] text-carvao/40">
+                          {rotuloCategoria(produto.categoria)}
+                        </span>
+                      </div>
+                      {produto.descricao && (
+                        <p className="mt-1 text-sm leading-relaxed text-carvao/60">
+                          {descricaoExibicao(produto.descricao)}
+                        </p>
+                      )}
+                    </div>
+                    <span className="shrink-0 font-display text-lg text-terracota">
+                      {formatarPreco(produto.preco)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="border border-dashed border-carvao/20 p-8 text-sm text-carvao/60">
+                O menu está a ser atualizado. Consulte a página do menu ou
+                fale connosco pelo WhatsApp.
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container-custom">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">Da nossa cozinha</p>
+              <h2 className="mt-3 font-display text-3xl sm:text-4xl">
+                O que sai daqui todos os dias
+              </h2>
+            </div>
+            <Link
+              to="/cardapio"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-terracota hover:text-secundaria"
+            >
+              Ver tudo <FiArrowRight aria-hidden="true" />
+            </Link>
+          </div>
+
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+            {GALERIA.map((foto, indice) => (
+              <figure
+                key={foto.src}
+                className={`group relative overflow-hidden ${
+                  indice === 0 ? "col-span-2 lg:col-span-1 lg:row-span-2" : ""
                 }`}
-              />
+              >
+                <img
+                  src={foto.src}
+                  alt={foto.alt}
+                  loading="lazy"
+                  width={800}
+                  height={800}
+                  className={`w-full object-cover transition-transform duration-500 group-hover:scale-[1.03] ${
+                    indice === 0 ? "aspect-square lg:aspect-[3/4]" : "aspect-square"
+                  }`}
+                />
+                <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-carvao/70 to-transparent p-3 text-xs font-medium text-creme sm:p-4 sm:text-sm">
+                  {foto.legenda}
+                </figcaption>
+              </figure>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* Banner de boas‑vindas para utilizadores autenticados */}
-        {isAuthenticated && (
-          <div className="bg-gradient-to-r from-primaria to-secundaria text-white py-6">
-            <div className="container-custom text-center">
-              <h2 className="text-2xl md:text-3xl font-bold mb-2">Bem-vindo de volta, {user?.nome?.split(' ')[0]}!</h2>
-              <div className="flex flex-wrap justify-center gap-3">
-                <button onClick={() => navigate("/cardapio")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">Explorar Cardápio</button>
-                <button onClick={() => navigate("/reservar-mesa")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">Reservar Mesa</button>
-                <button onClick={() => navigate("/minhas-reservas")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">Minhas Reservas</button>
-                <button onClick={() => navigate("/perfil")} className="bg-white text-primaria px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">Meu Perfil</button>
-              </div>
-            </div>
+      <section className="relative overflow-hidden bg-secundaria py-16 text-creme sm:py-20">
+        <div
+          aria-hidden="true"
+          className="absolute -right-24 -top-24 h-72 w-72 rounded-full border border-dourado/20"
+        />
+        <div className="container-custom relative grid items-center gap-8 lg:grid-cols-[1.3fr_1fr]">
+          <div>
+            <p className="eyebrow text-dourado">Reservas</p>
+            <h2 className="mt-3 font-display text-3xl text-creme sm:text-4xl">
+              Guarde a sua mesa. Nós tratamos do resto.
+            </h2>
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-creme/70">
+              Escolha o dia, a hora e o número de pessoas. A reserva fica
+              pendente até ser confirmada pela equipa do restaurante.
+            </p>
           </div>
-        )}
-
-        {/* Chamada atrativa para utilizadores NÃO autenticados */}
-        {!isAuthenticated && (
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 py-12 border-b border-amber-200">
-            <div className="container-custom text-center">
-              <h2 className="text-3xl md:text-4xl font-bold text-secundaria mb-4">Aderir ao Sistema</h2>
-              <p className="text-gray-700 text-lg max-w-2xl mx-auto mb-8">
-                Crie uma conta e teras a possibilidade de fazer pedidos online para entrega no conforto da sua casa, 
-                reservar uma mesa no restaurante, guarde os seus pratos favoritos e muito mais.
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <button
-                  onClick={() => navigate("/registro")}
-                  className="bg-primaria text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-secundaria transition transform hover:scale-105 shadow-md"
-                >
-                  Criar Conta
-                </button>
-                <button
-                  onClick={() => navigate("/login")}
-                  className="bg-white border-2 border-primaria text-primaria px-8 py-3 rounded-full text-lg font-semibold hover:bg-primaria/10 transition"
-                >
-                  Já tenho conta (entrar)
-                </button>
-              </div>
-             
-            </div>
+          <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
+            <Link to="/reservar-mesa" className="btn-light">
+              <FiCalendar aria-hidden="true" /> Reservar online
+            </Link>
+            <a
+              href={RESTAURANTE.telefonePrincipalLink}
+              className="btn border border-creme/30 text-creme hover:bg-creme hover:text-secundaria"
+            >
+              <FiPhone aria-hidden="true" /> Ligar
+            </a>
           </div>
-        )}
+        </div>
+      </section>
 
-        
+      <section className="section">
+        <div className="container-custom grid gap-12 lg:grid-cols-2 lg:gap-20">
+          <div>
+            <p className="eyebrow">Visite-nos</p>
+            <h2 className="mt-3 font-display text-3xl sm:text-4xl">
+              Uma mesa no centro de Chimoio.
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-carvao/65">
+              Estamos abertos todos os dias. Para grupos ou ocasiões especiais,
+              fale connosco com antecedência.
+            </p>
 
-        {/* Como usar o sistema */}
-        <section id="como-usar" className="py-16 bg-white">
-          <div className="container-custom">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">Como usar o sistema</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div className="text-center p-6 rounded-2xl hover:shadow-lg transition group">
-                <div className="text-5xl mb-4 bg-primaria/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:bg-primaria/20 transition">1</div>
-                <h3 className="text-xl font-semibold mb-2">Crie sua conta</h3>
-                <p className="text-gray-600">Registe-se com e-mail ou utilize a sua conta Google.</p>
-              </div>
-              <div className="text-center p-6 rounded-2xl hover:shadow-lg transition group">
-                <div className="text-5xl mb-4 bg-primaria/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:bg-primaria/20 transition">2</div>
-                <h3 className="text-xl font-semibold mb-2">Explore o cardápio</h3>
-                <p className="text-gray-600">Adicione os pratos ao carrinho e escolha a quantidade para seu pedido.</p>
-              </div>
-              <div className="text-center p-6 rounded-2xl hover:shadow-lg transition group">
-                <div className="text-5xl mb-4 bg-primaria/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:bg-primaria/20 transition">3</div>
-                <h3 className="text-xl font-semibold mb-2">Finalize e receba</h3>
-                <p className="text-gray-600">Escolha o bairro, calcule o frete e aguarde a entrega, e teras recibo por pdf.</p>
-              </div>
-              <div className="text-center p-6 rounded-2xl hover:shadow-lg transition group">
-                <div className="text-5xl mb-4 bg-primaria/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto group-hover:bg-primaria/20 transition">4</div>
-                <h3 className="text-xl font-semibold mb-2">Reserve sua mesa</h3>
-                <p className="text-gray-600">Escolha data, hora e número de pessoas. Receba um recibo em PDF.</p>
-              </div>
-            </div>
-            <div className="text-center mt-8">
-              <button onClick={handleManualClick} className="bg-primaria text-white px-6 py-2 rounded-full hover:bg-secundaria transition transform hover:scale-105 inline-flex items-center gap-2">
-                Manual do Utilizador
-              </button>
-            </div>
-          </div>
-        </section>
-
-       
-
-        {/* Pratos em destaque */}
-        <section className="py-16 bg-white">
-          <div className="container-custom">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">Pratos em Destaque</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                { img: "/pizza.jpg", nome: "Pizza Margherita", desc: "Molho de tomate, mussarela, manjericão.", preco: 450 },
-                { img: "https://images.pexels.com/photos/1633578/pexels-photo-1633578.jpeg?w=400", nome: "Hambúrguer Artesanal", desc: "180g carne, queijo cheddar, alface, tomate.", preco: 320 },
-                { img: "/Imagens Corretas/1-4 frango grelhado.jpg", nome: "Frango Grelhado", desc: "¼ frango com batata e arroz.", preco: 400 },
-              ].map((prato, i) => (
-                <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition transform hover:-translate-y-2 duration-300">
-                  <div className="relative h-56 overflow-hidden">
-                    <img src={prato.img} alt={prato.nome} className="w-full h-full object-cover transition hover:scale-105 duration-500" />
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold mb-2">{prato.nome}</h3>
-                    <p className="text-gray-600 mb-4">{prato.desc}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-primaria">{prato.preco} MT</span>
-                      <button onClick={() => handleProtectedClick("/cardapio")} className="bg-primaria text-white px-4 py-2 rounded-full hover:bg-secundaria transition">Adicionar</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="text-center mt-12">
-              <button onClick={() => handleProtectedClick("/cardapio")} className="bg-secundaria text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-primaria transition transform hover:scale-105">Ver Cardápio Completo</button>
-            </div>
-          </div>
-        </section>
-
-        {/* Sobre o restaurante */}
-        <section className="py-16 bg-fundo">
-          <div className="container-custom grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-secundaria mb-6">Feedback sobre o restaurante</h2>
-              <p className="text-gray-700 text-lg mb-6">Há mais de 2 anos, o Origens do Sabor tem atuado em Chimoio com o propósito de trazer à mesa o melhor da gastronomia.</p>
-              <p className="text-gray-700 text-lg mb-6">Localizado no centro de Chimoio, referenciamos a qualidade, atendimento e criatividade, tanto quanto entregas. Cada prato é preparado com ingredientes frescos e de qualidade.</p>
-            </div>
-            <div className="relative h-80 rounded-2xl overflow-hidden shadow-xl">
-              <img src="/cliente.jpg" alt="Interior do restaurante" className="w-full h-full object-cover" />
-            </div>
-          </div>
-        </section>
-
-        
-        {/* Contacto e localização */}
-        <section className="py-16 bg-fundo">
-          <div className="container-custom">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-secundaria mb-12">Contacto & Localização</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-              <div>
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
-                    <FiPhone className="text-primaria" /> Telefone / WhatsApp
-                  </h3>
-                  <p className="text-gray-700">+258 84 842 4621</p>
-                  <p className="text-gray-700">+258 86 015 1122</p>
-                  <a href="https://wa.me/258860151122" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-2 bg-[#25D366] text-white px-4 py-2 rounded-full hover:bg-[#128C7E] transition">
-                    <FaWhatsapp /> Falar no WhatsApp
-                  </a>
-                </div>
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
-                    <FiMail className="text-primaria" /> E-mail
-                  </h3>
-                  <p className="text-gray-700">origensdosabor@gmail.com</p>
-                </div>
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
-                    <FiMapPin className="text-primaria" /> Endereço
-                  </h3>
-                  <p className="text-gray-700">Rua Cidade de Lichinga, em frente ao Tribunal Judicial,<br />Chimoio, Moçambique</p>
-                </div>
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
-                    <FiClock className="text-primaria" /> Horário
-                  </h3>
-                  <p className="text-gray-700">Segunda a Sábado: 07:30 - 22h</p>
-                  <p className="text-gray-700">Domingo: 09h - 22h</p>
-                </div>
+            <dl className="mt-8 space-y-5 text-sm">
+              <div className="flex gap-4">
+                <FiMapPin aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-terracota" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Siga-nos</h3>
-                  <div className="flex flex-wrap gap-4">
-                    <a href="https://www.instagram.com/origens_do_sabor_restaurante_/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCAF45] hover:opacity-90 transition">
-                      <FaInstagram /> Instagram
-                    </a>
-                    <a href="https://web.facebook.com/p/Origens-do-sabor-61572114920143" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#1877F2] hover:bg-[#0E5A9E] transition">
-                      <FaFacebook /> Facebook
-                    </a>
-                    <a href="https://wa.me/258860151122" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-full text-white bg-[#25D366] hover:bg-[#128C7E] transition">
-                      <FaWhatsapp /> WhatsApp
-                    </a>
-                  </div>
+                  <dt className="font-semibold text-carvao">Morada</dt>
+                  <dd className="mt-1 text-carvao/65">{RESTAURANTE.endereco}</dd>
                 </div>
               </div>
-              <div className="relative h-96 rounded-2xl overflow-hidden shadow-xl">
-                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3255.964598476873!2d33.458832595283994!3d-19.10551060266401!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x192b3552f129dbbf%3A0x7339343c13544974!2sOrigens%20do%20sabor!5e1!3m2!1spt-PT!2smz!4v1779887217117!5m2!1spt-PT!2smz" width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" className="absolute inset-0 w-full h-full"></iframe>
+              <div className="flex gap-4">
+                <FiClock aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-terracota" />
+                <div>
+                  <dt className="font-semibold text-carvao">Horário</dt>
+                  {RESTAURANTE.horarios.map((horario) => (
+                    <dd key={horario.dias} className="mt-1 text-carvao/65">
+                      {horario.dias}: {horario.horas}
+                    </dd>
+                  ))}
+                </div>
               </div>
+              <div className="flex gap-4">
+                <FiPhone aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-terracota" />
+                <div>
+                  <dt className="font-semibold text-carvao">Telefone e WhatsApp</dt>
+                  <dd className="mt-1">
+                    <a href={RESTAURANTE.telefonePrincipalLink} className="block text-carvao/65 hover:text-terracota">
+                      {RESTAURANTE.telefonePrincipal}
+                    </a>
+                    <a href={RESTAURANTE.telefoneSecundarioLink} className="block text-carvao/65 hover:text-terracota">
+                      {RESTAURANTE.telefoneSecundario}
+                    </a>
+                  </dd>
+                </div>
+              </div>
+            </dl>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a
+                href={RESTAURANTE.mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary"
+              >
+                Abrir no Google Maps <FiArrowUpRight aria-hidden="true" />
+              </a>
+              <Link to="/contacto" className="btn-ghost">
+                Todos os contactos
+              </Link>
             </div>
           </div>
-        </section>
-      </main>
-    </>
+
+          <div className="relative">
+            <img
+              src="/imagens-web/prato-assinatura.webp"
+              alt="Prato do Origens do Sabor apresentado à mesa"
+              width={1200}
+              height={900}
+              loading="lazy"
+              className="aspect-[4/3] w-full object-cover"
+            />
+            <div className="absolute -left-4 -top-4 hidden h-24 w-24 border-l-2 border-t-2 border-dourado sm:block" />
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

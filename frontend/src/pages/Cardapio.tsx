@@ -1,269 +1,332 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
-import { useCartStore } from '../hooks/useCartStore';
-import { toast } from 'react-hot-toast';
-import { FiSearch, FiFilter, FiX, FiShoppingCart, FiImage } from 'react-icons/fi';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import {
+  FiSearch,
+  FiShoppingBag,
+  FiImage,
+  FiArrowRight,
+  FiX,
+} from "react-icons/fi";
+import api from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
+import { useCartStore } from "../hooks/useCartStore";
+import { imagemDoProduto } from "../data/imagens";
+import { descricaoExibicao, nomeExibicao, rotuloCategoria } from "../data/produtos";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 interface Produto {
   id: number;
   nome: string;
-  descricao: string;
+  descricao: string | null;
   preco: number;
   categoria: string;
   imagemUrl: string | null;
+  disponivel?: boolean;
+  destaque?: boolean;
+}
+
+const ORDEM_CATEGORIAS = [
+  "Entradas",
+  "Peixes",
+  "Massas & Pratos",
+  "Hamburguer",
+  "Cafe e Cha",
+];
+
+function formatarPreco(valor: number) {
+  return `${new Intl.NumberFormat("pt-MZ", {
+    minimumFractionDigits: Number.isInteger(valor) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(valor)} MT`;
 }
 
 export default function Cardapio() {
-  const { isAuthenticated, loading } = useAuth();
+  useDocumentTitle("Menu — Origens do Sabor");
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [filtroNome, setFiltroNome] = useState('');
-  const [filtroCategoria, setFiltroCategoria] = useState('');
-  const [filtroMin, setFiltroMin] = useState('');
-  const [filtroMax, setFiltroMax] = useState('');
-  const [categorias, setCategorias] = useState<string[]>([]);
-  const [carregandoProdutos, setCarregandoProdutos] = useState(true);
-  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const [busca, setBusca] = useState("");
+  const [categoria, setCategoria] = useState("Todas");
+
+  const carregarProdutos = useCallback(async () => {
+    setCarregando(true);
+    setErro("");
+    try {
+      const res = await api.get<Produto[]>("/produtos");
+      setProdutos(res.data);
+    } catch {
+      setErro("Não foi possível carregar o menu. Tente novamente.");
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      navigate('/login');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    carregarProdutos();
+  }, [carregarProdutos]);
+
+  const categorias = useMemo(() => {
+    const presentes = new Set(produtos.map((p) => p.categoria));
+    const ordenadas = [...presentes].sort((a, b) => {
+      const posA = ORDEM_CATEGORIAS.indexOf(a);
+      const posB = ORDEM_CATEGORIAS.indexOf(b);
+      if (posA !== -1 || posB !== -1) {
+        return (posA === -1 ? 99 : posA) - (posB === -1 ? 99 : posB);
+      }
+      return a.localeCompare(b, "pt");
+    });
+    return ["Todas", ...ordenadas];
+  }, [produtos]);
+
+  const filtrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    return produtos.filter((produto) => {
+      if (categoria !== "Todas" && produto.categoria !== categoria) return false;
+      if (!termo) return true;
+      return (
+        nomeExibicao(produto.nome).toLowerCase().includes(termo) ||
+        (descricaoExibicao(produto.descricao) || "").toLowerCase().includes(termo)
+      );
+    });
+  }, [produtos, busca, categoria]);
+
+  const grupos = useMemo(() => {
+    return filtrados.reduce<Record<string, Produto[]>>((acc, produto) => {
+      acc[produto.categoria] = acc[produto.categoria] || [];
+      acc[produto.categoria].push(produto);
+      return acc;
+    }, {});
+  }, [filtrados]);
+
+  const categoriasVisiveis = useMemo(() => {
+    const ordem = categoria === "Todas" ? categorias.slice(1) : [categoria];
+    return ordem.filter((nome) => grupos[nome]?.length);
+  }, [categoria, categorias, grupos]);
+
+  const adicionarAoCarrinho = (produto: Produto) => {
+    if (produto.disponivel === false) return;
+    if (!isAuthenticated) {
+      toast("Crie uma conta para encomendar.", { icon: "ℹ️" });
+      navigate("/login");
       return;
     }
-    if (isAuthenticated) {
-      const fetchProdutos = async () => {
-        try {
-          const res = await api.get<Produto[]>('/produtos');
-          const data = res.data;
-          setProdutos(data);
-          const cats = [...new Set(data.map(p => p.categoria))];
-          setCategorias(cats);
-        } catch {
-          toast.error('Erro ao carregar cardápio');
-        } finally {
-          setCarregandoProdutos(false);
-        }
-      };
-      fetchProdutos();
-    } else {
-      setCarregandoProdutos(false);
-    }
-  }, [isAuthenticated, loading, navigate]);
-
-  const handleAddToCart = (produto: Produto) => {
     addItem({
       id: produto.id,
-      nome: produto.nome,
+      nome: nomeExibicao(produto.nome),
       preco: produto.preco,
       quantidade: 1,
-      imagemUrl: produto.imagemUrl || undefined,
+      imagemUrl: imagemDoProduto(produto.nome, produto.imagemUrl) || undefined,
     });
-    toast.custom(
-      (t) => (
-        <div
-          className={`${
-            t.visible ? 'animate-enter' : 'animate-leave'
-          } max-w-md w-full bg-white shadow-lg rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
-        >
-          <div className="flex-1 p-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 pt-0.5">
-                <FiShoppingCart className="h-6 w-6 text-primaria" />
-              </div>
-              <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-gray-900">Adicionado ao carrinho!</p>
-                <p className="mt-1 text-sm text-gray-500">
-                  {produto.nome} - {produto.preco.toFixed(2)} MT
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex border-l border-gray-200">
-            <button
-              onClick={() => toast.dismiss(t.id)}
-              className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-primaria hover:text-secundaria focus:outline-none"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: 3000 }
-    );
+    toast.success(`${nomeExibicao(produto.nome)} adicionado ao carrinho`);
   };
-
-  // Aplica todos os filtros (nome, categoria, preço)
-  const produtosFiltrados = produtos.filter((p) => {
-    if (filtroNome && !p.nome.toLowerCase().includes(filtroNome.toLowerCase())) return false;
-    if (filtroCategoria && p.categoria !== filtroCategoria) return false;
-    if (filtroMin && p.preco < parseFloat(filtroMin)) return false;
-    if (filtroMax && p.preco > parseFloat(filtroMax)) return false;
-    return true;
-  });
-
-  // Agrupa os produtos filtrados por categoria
-  const produtosPorCategoria = produtosFiltrados.reduce((acc, produto) => {
-    if (!acc[produto.categoria]) {
-      acc[produto.categoria] = [];
-    }
-    acc[produto.categoria].push(produto);
-    return acc;
-  }, {} as Record<string, Produto[]>);
-
-  // Ordena as categorias (alfabeticamente)
-  const categoriasOrdenadas = Object.keys(produtosPorCategoria).sort((a, b) => a.localeCompare(b));
-
-  const limparFiltros = () => {
-    setFiltroNome('');
-    setFiltroCategoria('');
-    setFiltroMin('');
-    setFiltroMax('');
-  };
-
-  if (loading || (isAuthenticated && carregandoProdutos)) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primaria"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) return null;
 
   return (
-    <div className="bg-fundo min-h-screen py-8">
-      <div className="container-custom">
-        <h1 className="text-3xl md:text-4xl font-bold text-secundaria mb-2 text-center">Nosso Cardápio</h1>
-        <p className="text-center text-gray-600 mb-8">Sabores que encantam, direto da nossa cozinha para si.</p>
-
-        {/* Barra de busca + botão filtros mobile */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-1 relative">
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar prato..."
-              value={filtroNome}
-              onChange={(e) => setFiltroNome(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-primaria"
-            />
-          </div>
-          <button
-            onClick={() => setFiltrosAbertos(!filtrosAbertos)}
-            className="md:hidden flex items-center justify-center gap-2 bg-white border rounded-full px-4 py-2 shadow-sm"
-          >
-            <FiFilter /> Filtros {filtrosAbertos ? <FiX /> : ''}
-          </button>
+    <div>
+      <section className="border-b border-carvao/10 bg-white/60">
+        <div className="container-custom py-12 sm:py-16">
+          <p className="eyebrow">Menu</p>
+          <h1 className="mt-3 font-display text-4xl sm:text-5xl">
+            O que temos hoje
+          </h1>
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-carvao/65 sm:text-base">
+            Entradas, peixe, massas, hambúrgueres e café. Os pratos e preços são
+            atualizados pela equipa do restaurante. Para encomendas, adicione ao
+            carrinho e finalize com a sua conta.
+          </p>
         </div>
+      </section>
 
-        {/* Painel de filtros */}
-        <div className={`${filtrosAbertos ? 'block' : 'hidden md:block'} bg-white p-4 rounded-2xl shadow-md mb-8`}>
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="flex-1 min-w-[150px]">
-              <label className="block text-sm font-medium mb-1">Categoria</label>
-              <select
-                value={filtroCategoria}
-                onChange={(e) => setFiltroCategoria(e.target.value)}
-                className="w-full border rounded-full px-4 py-2"
+      <div className="sticky top-[4.6rem] z-30 border-b border-carvao/10 bg-fundo/95 backdrop-blur">
+        <div className="container-custom flex flex-col gap-3 py-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {categorias.map((nome) => (
+              <button
+                key={rotuloCategoria(nome)}
+                type="button"
+                onClick={() => setCategoria(nome)}
+                className={`shrink-0 border px-4 py-2 text-xs font-semibold transition-colors ${
+                  categoria === nome
+                    ? "border-secundaria bg-secundaria text-creme"
+                    : "border-carvao/15 text-carvao/70 hover:border-carvao/35"
+                }`}
+                aria-pressed={categoria === nome}
               >
-                <option value="">Todas</option>
-                {categorias.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="w-28">
-              <label className="block text-sm font-medium mb-1">Preço min (MT)</label>
-              <input
-                type="number"
-                value={filtroMin}
-                onChange={(e) => setFiltroMin(e.target.value)}
-                placeholder="0"
-                className="w-full border rounded-full px-4 py-2"
-              />
-            </div>
-            <div className="w-28">
-              <label className="block text-sm font-medium mb-1">Preço max (MT)</label>
-              <input
-                type="number"
-                value={filtroMax}
-                onChange={(e) => setFiltroMax(e.target.value)}
-                placeholder="9999"
-                className="w-full border rounded-full px-4 py-2"
-              />
-            </div>
-            <button
-              onClick={limparFiltros}
-              className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-full transition flex items-center gap-1"
-            >
-              <FiX size={16} /> Limpar
-            </button>
+                {rotuloCategoria(nome)}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative w-full md:w-72">
+            <FiSearch
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-carvao/40"
+            />
+            <input
+              type="search"
+              value={busca}
+              onChange={(event) => setBusca(event.target.value)}
+              placeholder="Buscar prato..."
+              aria-label="Buscar prato"
+              className="input py-2.5 pl-9 pr-9"
+            />
+            {busca && (
+              <button
+                type="button"
+                onClick={() => setBusca("")}
+                aria-label="Limpar busca"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-carvao/40 hover:text-carvao"
+              >
+                <FiX className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* Exibição por categorias */}
-        {produtosFiltrados.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-gray-500">Nenhum produto encontrado. Tente outros filtros.</p>
-            <button onClick={limparFiltros} className="mt-4 text-primaria hover:underline">
-              Limpar filtros
-            </button>
-          </div>
-        ) : (
-          <div>
-            {categoriasOrdenadas.map((categoria) => (
-              <div key={categoria} className="mb-12">
-                <h2 className="text-2xl md:text-3xl font-bold text-secundaria border-b-4 border-primaria inline-block pb-2 mb-6">
-                  {categoria}
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {produtosPorCategoria[categoria].map((produto) => (
-                    <div
-                      key={produto.id}
-                      className="group bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
-                    >
-                      <div className="relative h-56 overflow-hidden bg-gray-100">
-                        {produto.imagemUrl ? (
-                          <img
-                            src={produto.imagemUrl}
-                            alt={produto.nome}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            <FiImage size={40} />
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-5">
-                        <h3 className="text-xl font-bold text-secundaria mb-1">{produto.nome}</h3>
-                        <p className="text-gray-600 text-sm mb-2 line-clamp-2">{produto.descricao || 'Sem descrição'}</p>
-                        <p className="text-xs text-primaria font-semibold mb-3">{produto.categoria}</p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-2xl font-bold text-primaria">{produto.preco.toFixed(2)} MT</span>
-                          <button
-                            onClick={() => handleAddToCart(produto)}
-                            className="bg-primaria hover:bg-secundaria text-white px-4 py-2 rounded-full transition flex items-center gap-1"
-                          >
-                            <FiShoppingCart size={16} /> Adicionar
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+      <div className="container-custom py-12 sm:py-16">
+        {carregando ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+            {Array.from({ length: 6 }).map((_, indice) => (
+              <div key={indice} className="animate-pulse border border-carvao/10 bg-white">
+                <div className="aspect-[4/3] bg-areia/60" />
+                <div className="space-y-3 p-5">
+                  <div className="h-4 w-2/3 bg-areia/70" />
+                  <div className="h-3 w-full bg-areia/50" />
+                  <div className="h-3 w-1/3 bg-areia/50" />
                 </div>
               </div>
             ))}
           </div>
+        ) : erro ? (
+          <div className="border border-carvao/15 bg-white p-10 text-center">
+            <p className="text-sm text-carvao/70">{erro}</p>
+            <button type="button" onClick={carregarProdutos} className="btn-primary mt-5">
+              Tentar novamente
+            </button>
+          </div>
+        ) : filtrados.length === 0 ? (
+          <div className="border border-carvao/15 bg-white p-10 text-center">
+            <p className="font-display text-2xl text-secundaria">
+              Nenhum prato encontrado
+            </p>
+            <p className="mt-2 text-sm text-carvao/60">
+              Tente outra categoria ou limpe a pesquisa.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setBusca("");
+                setCategoria("Todas");
+              }}
+              className="btn-secondary mt-5"
+            >
+              Limpar filtros
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-16">
+            {categoriasVisiveis.map((nomeCategoria) => (
+              <section key={nomeCategoria} aria-labelledby={`categoria-${nomeCategoria}`}>
+                <div className="flex items-baseline justify-between gap-4 border-b border-carvao/15 pb-3">
+                  <h2
+                    id={`categoria-${nomeCategoria}`}
+                    className="font-display text-2xl text-secundaria sm:text-3xl"
+                  >
+                    {rotuloCategoria(nomeCategoria)}
+                  </h2>
+                  <span className="text-xs uppercase tracking-[0.16em] text-carvao/40">
+                    {grupos[nomeCategoria].length} pratos
+                  </span>
+                </div>
+
+                <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {grupos[nomeCategoria].map((produto) => {
+                    const imagem = imagemDoProduto(produto.nome, produto.imagemUrl);
+                    const esgotado = produto.disponivel === false;
+                    return (
+                      <article
+                        key={produto.id}
+                        className="group flex flex-col border border-carvao/10 bg-white transition-shadow hover:shadow-suave"
+                      >
+                        <div className="relative aspect-[4/3] overflow-hidden bg-areia/40">
+                          {imagem ? (
+                            <img
+                              src={imagem}
+                              alt={nomeExibicao(produto.nome)}
+                              loading="lazy"
+                              width={640}
+                              height={480}
+                              className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03] ${
+                                esgotado ? "opacity-50 grayscale" : ""
+                              }`}
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-carvao/25">
+                              <FiImage className="h-9 w-9" aria-hidden="true" />
+                            </div>
+                          )}
+                          {produto.destaque && !esgotado && (
+                            <span className="absolute left-3 top-3 bg-fundo/95 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-terracota">
+                              Sugestão da casa
+                            </span>
+                          )}
+                          {esgotado && (
+                            <span className="absolute left-3 top-3 bg-carvao/80 px-2.5 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-creme">
+                              Esgotado
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex flex-1 flex-col p-5">
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="font-display text-xl leading-snug text-secundaria">
+                              {nomeExibicao(produto.nome)}
+                            </h3>
+                            <span className="shrink-0 font-display text-lg text-terracota">
+                              {formatarPreco(produto.preco)}
+                            </span>
+                          </div>
+                          <p className="mt-2 flex-1 text-sm leading-relaxed text-carvao/60">
+                            {descricaoExibicao(produto.descricao) || "Consulte a equipa para mais detalhes."}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => adicionarAoCarrinho(produto)}
+                            disabled={esgotado}
+                            className="mt-5 inline-flex items-center justify-center gap-2 border border-secundaria/20 px-4 py-2.5 text-xs font-semibold text-secundaria transition-colors hover:border-secundaria hover:bg-secundaria hover:text-creme disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-secundaria/20 disabled:hover:bg-transparent disabled:hover:text-secundaria"
+                          >
+                            <FiShoppingBag aria-hidden="true" />
+                            {esgotado ? "Indisponível" : "Adicionar ao carrinho"}
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+
+            <div className="flex flex-col items-start justify-between gap-4 border-t border-carvao/15 pt-8 sm:flex-row sm:items-center">
+              <p className="text-sm text-carvao/60">
+                Precisa de ajuda a escolher ou quer encomendar para um grupo?
+              </p>
+              <a
+                href="https://wa.me/258860151122?text=Ol%C3%A1%2C%20gostaria%20de%20falar%20sobre%20o%20menu."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-terracota hover:text-secundaria"
+              >
+                Falar connosco <FiArrowRight aria-hidden="true" />
+              </a>
+            </div>
+          </div>
         )}
       </div>
-
     </div>
   );
 }

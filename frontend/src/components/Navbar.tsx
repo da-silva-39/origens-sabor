@@ -1,146 +1,252 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { FiCalendar, FiMenu, FiX, FiShoppingBag, FiUser, FiPhone } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
-import { useState } from 'react';
-import { FiMenu, FiX } from 'react-icons/fi';
+import { useCartStore } from '../hooks/useCartStore';
+import { LINK_NAVEGACAO, RESTAURANTE } from '../data/restaurante';
+
+const linkClass = ({ isActive }: { isActive: boolean }) =>
+  `nav-link border-b-2 pb-1 ${
+    isActive ? 'border-terracota text-terracota' : 'border-transparent'
+  }`;
 
 export default function Navbar() {
   const { user, logout, isAuthenticated } = useAuth();
-  const [menuAberto, setMenuAberto] = useState(false);
+  const [aberto, setAberto] = useState(false);
+  const location = useLocation();
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const totalItens = useCartStore((state) =>
+    state.items.reduce((acc, item) => acc + item.quantidade, 0)
+  );
 
-  const toggleMenu = () => setMenuAberto(!menuAberto);
-  const fecharMenu = () => setMenuAberto(false);
+  // Fecha o menu móvel quando a rota muda.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAberto(false);
+  }, [location.pathname]);
 
-  const linkBase = "px-4 py-2 rounded-full transition-all duration-300 hover:scale-105";
-  const linkDesktop = `${linkBase} hover:bg-white/20`;
-  const linkMobile = `${linkBase} hover:bg-white/20 w-full text-center`;
-  const btnLoginDesktop = "px-6 py-2 rounded-full bg-white text-primaria font-semibold hover:bg-secundaria hover:text-white transition duration-300";
-  const btnLoginMobile = `${btnLoginDesktop} w-full text-center`;
+  useEffect(() => {
+    if (!aberto) return;
+    const fecharComEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setAberto(false);
+        toggleRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', fecharComEscape);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', fecharComEscape);
+      document.body.style.overflow = '';
+    };
+  }, [aberto]);
 
-  // Só mostrar links de cliente (carrinho, reservas) se for CLIENTE
   const isCliente = user?.role === 'CLIENTE';
   const isAdmin = user?.role === 'ADMIN';
   const isAgente = user?.role === 'AGENTE';
 
+  const painel =
+    isAdmin ? '/admin/dashboard' : isAgente ? '/agente/dashboard' : '/dashboard';
+
   return (
-    <nav className="bg-primaria text-white sticky top-0 z-50 shadow-md">
-      <div className="container-custom flex justify-between items-center py-4">
-        <Link to="/" className="text-2xl font-bold hover:opacity-90 transition">
-          Origens do Sabor
-        </Link>
+    <>
+      <a
+        href="#conteudo-principal"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:bg-secundaria focus:px-4 focus:py-2 focus:text-sm focus:text-creme"
+      >
+        Saltar para o conteúdo
+      </a>
 
-        {/* Links para desktop */}
-        <div className="hidden md:flex items-center gap-3">
-          <Link to="/" className={linkDesktop}>Início</Link>
-
-          {/* Contacto só para não autenticados e clientes (e agentes talvez) */}
-          {(!isAuthenticated || isCliente || isAgente) && (
-            <Link to="/contacto" className={linkDesktop}>Contactar</Link>
-          )}
-
-          {isAuthenticated ? (
-            <>
-              <Link to="/cardapio" className={linkDesktop}>
-                Cardápio
-              </Link>
-
-              {/* Links exclusivos para cliente */}
-              {isCliente && (
-                <>
-                  <Link to="/carrinho" className={linkDesktop}>Carrinho</Link>
-                  <Link to="/reservar-mesa" className={linkDesktop}>Reservar Mesa</Link>
-                  <Link to="/minhas-reservas" className={linkDesktop}>Minhas Reservas</Link>
-                </>
-              )}
-
-              {/* Admin links */}
-              {isAdmin && (
-                <>
-                  <Link to="/admin/dashboard" className={linkDesktop}>Admin</Link>
-                  <Link to="/admin/reservas" className={linkDesktop}>Gerir Reservas</Link>
-                  <Link to="/admin/mesas" className={linkDesktop}>Mesas</Link>
-                </>
-              )}
-
-              {/* Agente links */}
-              {isAgente && (
-                <Link to="/agente/dashboard" className={linkDesktop}>Dashboard</Link>
-              )}
-
-              {/* Dashboard do cliente (se for cliente) */}
-              {isCliente && (
-                <Link to="/dashboard" className={linkDesktop}>Dashboard</Link>
-              )}
-
-              <Link to="/perfil" className={linkDesktop}>Perfil</Link>
-              <button
-                onClick={logout}
-                className={`${linkDesktop} bg-white/10 hover:bg-white/30 text-white`}
-              >
-                Sair
-              </button>
-            </>
-          ) : (
-            <Link to="/login" className={btnLoginDesktop}>Entrar</Link>
-          )}
+      <div className="bg-secundaria text-creme/75">
+        <div className="container-custom flex items-center justify-between py-2 text-[0.7rem] tracking-wide">
+          <p className="hidden sm:block">Chimoio · Moçambique</p>
+          <p className="sm:hidden">Chimoio</p>
+          <div className="flex items-center gap-5">
+            <span className="hidden md:inline">Seg–Sáb 07:30–22:00 · Dom 09:00–22:00</span>
+            <a
+              href={RESTAURANTE.telefonePrincipalLink}
+              className="inline-flex items-center gap-1.5 transition-colors hover:text-white"
+            >
+              <FiPhone aria-hidden="true" className="h-3 w-3" />
+              {RESTAURANTE.telefonePrincipal}
+            </a>
+          </div>
         </div>
-
-        {/* Botão do menu mobile */}
-        <button
-          onClick={toggleMenu}
-          className="md:hidden text-2xl focus:outline-none"
-        >
-          {menuAberto ? <FiX /> : <FiMenu />}
-        </button>
       </div>
 
-      {/* Menu mobile */}
-      {menuAberto && (
-        <div className="md:hidden bg-primaria py-4 px-6 flex flex-col gap-3 border-t border-white/20">
-          <Link to="/" onClick={fecharMenu} className={linkMobile}>Início</Link>
-          {(!isAuthenticated || isCliente || isAgente) && (
-            <Link to="/contacto" onClick={fecharMenu} className={linkMobile}>Contactar</Link>
-          )}
-          {isAuthenticated ? (
-            <>
-              <Link to="/cardapio" onClick={fecharMenu} className={linkMobile}>
-                Cardápio
-              </Link>
-              {isCliente && (
-                <>
-                  <Link to="/carrinho" onClick={fecharMenu} className={linkMobile}>Carrinho</Link>
-                  <Link to="/reservar-mesa" onClick={fecharMenu} className={linkMobile}>Reservar Mesa</Link>
-                  <Link to="/minhas-reservas" onClick={fecharMenu} className={linkMobile}>Minhas Reservas</Link>
-                </>
-              )}
-              {isAdmin && (
-                <>
-                  <Link to="/admin/dashboard" onClick={fecharMenu} className={linkMobile}>Admin</Link>
-                  <Link to="/admin/reservas" onClick={fecharMenu} className={linkMobile}>Gerir Reservas</Link>
-                  <Link to="/admin/mesas" onClick={fecharMenu} className={linkMobile}>Mesas</Link>
-                </>
-              )}
-              {isAgente && (
-                <Link to="/agente/dashboard" onClick={fecharMenu} className={linkMobile}>Dashboard</Link>
-              )}
-              {isCliente && (
-                <Link to="/dashboard" onClick={fecharMenu} className={linkMobile}>Dashboard</Link>
-              )}
-              <Link to="/perfil" onClick={fecharMenu} className={linkMobile}>Perfil</Link>
-              <button
-                onClick={() => {
-                  logout();
-                  fecharMenu();
-                }}
-                className={`${linkMobile} bg-white/10 hover:bg-white/30 text-white text-left`}
+      <header className="sticky top-0 z-50 border-b border-carvao/10 bg-fundo/95 backdrop-blur">
+        <nav
+          className="container-custom flex items-center justify-between gap-6 py-3.5"
+          aria-label="Navegação principal"
+        >
+          <Link to="/" className="flex items-center gap-3" aria-label="Origens do Sabor — início">
+            <img
+              src="/logo.jpg"
+              alt=""
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-full object-cover ring-1 ring-carvao/10"
+            />
+            <span className="leading-tight">
+              <span className="block font-display text-xl text-secundaria">
+                {RESTAURANTE.nome}
+              </span>
+              <span className="hidden text-[0.62rem] uppercase tracking-[0.24em] text-carvao/55 sm:block">
+                {RESTAURANTE.descricao}
+              </span>
+            </span>
+          </Link>
+
+          <div className="hidden items-center gap-7 lg:flex">
+            {LINK_NAVEGACAO.map((link) => (
+              <NavLink key={link.to} to={link.to} className={linkClass} end={link.to === '/'}>
+                {link.label}
+              </NavLink>
+            ))}
+          </div>
+
+          <div className="hidden items-center gap-3 lg:flex">
+            {isAuthenticated ? (
+              <>
+                {isCliente && (
+                  <>
+                    <Link
+                      to="/minhas-reservas"
+                      className="nav-link inline-flex items-center gap-1.5"
+                    >
+                      <FiCalendar aria-hidden="true" className="h-4 w-4" /> Reservas
+                    </Link>
+                    <Link
+                      to="/carrinho"
+                      className="relative p-2 text-carvao/75 transition-colors hover:text-terracota"
+                      aria-label={`Carrinho, ${totalItens} artigo(s)`}
+                    >
+                      <FiShoppingBag className="h-5 w-5" aria-hidden="true" />
+                      {totalItens > 0 && (
+                        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-terracota px-1 text-[0.6rem] font-bold text-white">
+                          {totalItens}
+                        </span>
+                      )}
+                    </Link>
+                  </>
+                )}
+                <Link
+                  to={painel}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-carvao/80 hover:text-terracota"
+                >
+                  <FiUser aria-hidden="true" className="h-4 w-4" />
+                  <span className="max-w-[9rem] truncate">
+                    {user?.nome?.split(' ')[0]}
+                  </span>
+                </Link>
+                {isAdmin && (
+                  <Link to="/admin/reservas" className="nav-link">
+                    Reservas
+                  </Link>
+                )}
+                {isAgente && (
+                  <Link to="/agente/dashboard" className="nav-link">
+                    Entregas
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="text-sm font-medium text-carvao/55 hover:text-terracota"
+                >
+                  Sair
+                </button>
+                <Link to="/reservar-mesa" className="btn-primary btn-sm">
+                  Reservar
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="nav-link">
+                  Entrar
+                </Link>
+                <Link to="/reservar-mesa" className="btn-primary btn-sm">
+                  Reservar mesa
+                </Link>
+              </>
+            )}
+          </div>
+
+          <button
+            ref={toggleRef}
+            type="button"
+            onClick={() => setAberto((valor) => !valor)}
+            className="inline-flex items-center justify-center rounded-sm p-2 text-secundaria lg:hidden"
+            aria-expanded={aberto}
+            aria-controls="menu-mobile"
+            aria-label={aberto ? 'Fechar menu' : 'Abrir menu'}
+          >
+            {aberto ? <FiX className="h-6 w-6" /> : <FiMenu className="h-6 w-6" />}
+          </button>
+        </nav>
+
+        <div
+          id="menu-mobile"
+          className={`${aberto ? 'block' : 'hidden'} border-t border-carvao/10 bg-fundo lg:hidden`}
+        >
+          <div className="container-custom flex max-h-[calc(100vh-7rem)] flex-col gap-1 overflow-y-auto py-5">
+            {LINK_NAVEGACAO.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.to === '/'}
+                className={({ isActive }) =>
+                  `border-b border-carvao/5 py-3 font-display text-lg ${
+                    isActive ? 'text-terracota' : 'text-secundaria'
+                  }`
+                }
               >
-                Sair
-              </button>
-            </>
-          ) : (
-            <Link to="/login" onClick={fecharMenu} className={btnLoginMobile}>Entrar</Link>
-          )}
+                {link.label}
+              </NavLink>
+            ))}
+
+            <div className="mt-4 flex flex-col gap-2 border-t border-carvao/10 pt-4">
+              {isAuthenticated ? (
+                <>
+                  <Link to={painel} className="btn-secondary">
+                    <FiUser aria-hidden="true" /> {user?.nome?.split(' ')[0]}
+                  </Link>
+                  {isCliente && (
+                    <>
+                      <Link to="/carrinho" className="btn-secondary">
+                        <FiShoppingBag aria-hidden="true" /> Carrinho ({totalItens})
+                      </Link>
+                      <Link to="/minhas-reservas" className="btn-secondary">
+                        As minhas reservas
+                      </Link>
+                    </>
+                  )}
+                  {isAdmin && (
+                    <>
+                      <Link to="/admin/reservas" className="btn-secondary">
+                        Gerir reservas
+                      </Link>
+                      <Link to="/admin/mesas" className="btn-secondary">
+                        Mesas
+                      </Link>
+                    </>
+                  )}
+                  <button type="button" onClick={logout} className="btn-ghost">
+                    Terminar sessão
+                  </button>
+                </>
+              ) : (
+                <Link to="/login" className="btn-secondary">
+                  Entrar na minha conta
+                </Link>
+              )}
+              <Link to="/reservar-mesa" className="btn-primary mt-1">
+                Reservar mesa
+              </Link>
+            </div>
+          </div>
         </div>
-      )}
-    </nav>
+      </header>
+    </>
   );
 }

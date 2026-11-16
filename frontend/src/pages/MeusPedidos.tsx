@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import { nomeExibicao } from '../data/produtos';
 import { toast } from 'react-hot-toast';
 import { pdf } from '@react-pdf/renderer';
 import { ReciboPedidoPDF } from '../components/ReciboPedidoPDF';
-import { FiDownload, FiSearch, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiDownload, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 interface ItemPedido {
   id: number;
@@ -145,7 +146,7 @@ export default function MeusPedidos() {
                   <div className="space-y-1">
                     {pedido.itens.map((item) => (
                       <div key={item.id} className="flex justify-between text-sm">
-                        <span>{item.quantidade}x {item.produtoNome}</span>
+                        <span>{item.quantidade}x {nomeExibicao(item.produtoNome)}</span>
                         <span>{item.subtotal.toFixed(2)} MT</span>
                       </div>
                     ))}

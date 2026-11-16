@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCartStore } from '../hooks/useCartStore';
+import { nomeExibicao } from '../data/produtos';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
 import { FiTruck, FiClock, FiUser, FiPhone, FiMail, FiMapPin, FiShoppingCart } from 'react-icons/fi';
@@ -173,7 +174,7 @@ export default function Finalizar() {
       total,
       itens: items.map(item => ({
         produtoId: item.id,
-        produtoNome: item.nome,
+        produtoNome: nomeExibicao(item.nome),
         precoUnitario: item.preco,
         quantidade: item.quantidade,
         subtotal: item.preco * item.quantidade,
@@ -192,7 +193,12 @@ export default function Finalizar() {
         total: pedido.total || total,
         subtotal: pedido.subtotal !== undefined ? pedido.subtotal : subtotal,
         frete: pedido.frete !== undefined ? pedido.frete : frete,
-        itens: (pedido.itens && pedido.itens.length > 0) ? pedido.itens : pedidoData.itens,
+        itens: ((pedido.itens && pedido.itens.length > 0) ? pedido.itens : pedidoData.itens).map(
+          (item: { quantidade: number; produtoNome: string; precoUnitario?: number; subtotal?: number }) => ({
+            ...item,
+            produtoNome: nomeExibicao(item.produtoNome),
+          })
+        ),
         endereco: form.endereco,
         bairro: bairroSelecionado,
       };
@@ -347,7 +353,7 @@ export default function Finalizar() {
             <div className="space-y-2 mb-4">
               {items.map(item => (
                 <div key={item.id} className="flex justify-between text-sm">
-                  <span>{item.quantidade}x {item.nome}</span>
+                  <span>{item.quantidade}x {nomeExibicao(item.nome)}</span>
                   <span>{(item.preco * item.quantidade).toFixed(2)} MT</span>
                 </div>
               ))}

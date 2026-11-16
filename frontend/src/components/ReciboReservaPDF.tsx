@@ -1,9 +1,10 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
 // Cores institucionais
-const COR_PRIMARIA = '#ff6b35';
-const COR_SECUNDARIA = '#2c3e50';
-const COR_CINZA = '#555555';
+const COR_PRIMARIA = '#A9502F';
+const COR_SECUNDARIA = '#1E3A2B';
+const COR_CINZA = '#5C574E';
+const COR_DOURADO = '#C19A5B';
 
 // URL da logo no Cloudinary
 const LOGO_URL = 'https://res.cloudinary.com/dx3rzepdc/image/upload/v1782072018/logo_zhzabn.jpg';
@@ -19,7 +20,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 2,
-    borderBottomColor: COR_PRIMARIA,
+    borderBottomColor: COR_DOURADO,
     paddingBottom: 15,
     marginBottom: 25,
   },
@@ -90,9 +91,9 @@ interface Props {
     dataHora: string;
     quantidadePessoas: number;
     status: string;
-    observacoes?: string;
+    observacoes?: string | null;
     mesa: { numero: number };
-    cliente: { nome: string; email: string; telefone?: string };
+    cliente: { nome: string; email: string; telefone?: string | null };
   };
   qrDataUrl?: string;
 }
@@ -147,7 +148,7 @@ export const ReciboReservaPDF = ({ reserva, qrDataUrl }: Props) => {
         <View style={styles.infoBloco}>
           <Text style={styles.label}>Status</Text>
           <Text style={styles.valor}>
-            {reserva.status === 'CONFIRMADA' ? 'Confirmada' : reserva.status}
+            {reserva.status === 'CONFIRMADA' ? 'Confirmada' : reserva.status === 'PENDENTE' ? 'Pendente' : reserva.status === 'CANCELADA' ? 'Cancelada' : reserva.status}
           </Text>
         </View>
         {reserva.observacoes && (
@@ -169,6 +170,7 @@ export const ReciboReservaPDF = ({ reserva, qrDataUrl }: Props) => {
         <View style={styles.rodape}>
           <Text>Obrigado por reservar no Origens do Sabor!</Text>
           <Text>Contactos: +258 84 842 4621 | +258 86 015 1122</Text>
+          <Text>origensdosabor@gmail.com · Chimoio, Moçambique</Text>
           <Text>© Origens do Sabor – Todos os direitos reservados</Text>
         </View>
       </Page>

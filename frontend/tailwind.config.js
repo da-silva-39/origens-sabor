@@ -4,19 +4,38 @@ export default {
   theme: {
     extend: {
       colors: {
-        primaria: "#d97a2b",
-        secundaria: "#8b3c1c",
-        fundo: "#fef7e8",
-        texto: "#2c1a12",
+        primaria: "#A9502F",
+        secundaria: "#1E3A2B",
+        fundo: "#F8F3E8",
+        texto: "#26231E",
+        verde: "#1E3A2B",
+        "verde-claro": "#2F5A43",
+        terracota: "#A9502F",
+        "terracota-claro": "#C2643A",
+        creme: "#F8F3E8",
+        carvao: "#26231E",
+        dourado: "#C19A5B",
+        areia: "#E9DFCC",
+        oliva: "#6B7A52",
       },
-      animation: {
-        "fade-in-up": "fadeInUp 0.8s ease-out forwards",
+      fontFamily: {
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Fraunces", "Georgia", "Cambria", "serif"],
+      },
+      maxWidth: {
+        conteudo: "76rem",
+      },
+      boxShadow: {
+        suave: "0 18px 45px -30px rgba(38, 35, 30, 0.45)",
       },
       keyframes: {
         fadeInUp: {
-          "0%": { opacity: "0", transform: "translateY(30px)" },
+          "0%": { opacity: "0", transform: "translateY(18px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+      },
+      animation: {
+        "fade-in-up": "fadeInUp 0.7s ease-out both",
       },
     },
   },

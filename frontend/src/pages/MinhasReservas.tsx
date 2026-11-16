@@ -1,12 +1,13 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
 import { pdf } from '@react-pdf/renderer';
 import QRCode from 'qrcode';
 import { ReciboReservaPDF } from '../components/ReciboReservaPDF';
-import { FiCheckCircle, FiDownload, FiX } from 'react-icons/fi';
+import { FiCalendar, FiCheckCircle, FiDownload, FiPlus, FiX } from 'react-icons/fi';
 
 interface Reserva {
   id: number;
@@ -19,13 +20,25 @@ interface Reserva {
   observacoes?: string;
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  PENDENTE: 'Pendente',
+  CONFIRMADA: 'Confirmada',
+  CANCELADA: 'Cancelada',
+};
+
+const STATUS_COR: Record<string, string> = {
+  PENDENTE: 'bg-dourado/15 text-[#8a6a34]',
+  CONFIRMADA: 'bg-oliva/15 text-oliva',
+  CANCELADA: 'bg-red-100 text-red-700',
+};
+
 export default function MinhasReservas() {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   const handleBaixarRecibo = useCallback(async (reserva: Reserva) => {
     try {
-      const appUrl = ((import.meta as any).env?.VITE_APP_URL || window.location.origin).replace(/\/$/, '');
+      const appUrl = (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, '');
       const qrData = `${appUrl}/reservas/validar/${reserva.id}?codigo=${reserva.codigoRecibo}`;
       const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
       const blob = await pdf(<ReciboReservaPDF reserva={reserva} qrDataUrl={qrDataUrl} />).toBlob();
@@ -43,40 +56,51 @@ export default function MinhasReservas() {
 
   const fetchReservas = useCallback(async () => {
     try {
-      const res = await api.get('/reservas/minhas');
+      const res = await api.get<Reserva[]>('/reservas/minhas');
       const novas = res.data;
-      // Detecta mudanças para CONFIRMADA e mostra notificação
-      setReservas(prev => {
-        const prevMap = new Map(prev.map(r => [r.id, r]));
+      setReservas((prev) => {
+        const prevMap = new Map(prev.map((r) => [r.id, r]));
         for (const nova of novas) {
           const antiga = prevMap.get(nova.id);
           if (antiga && antiga.status !== 'CONFIRMADA' && nova.status === 'CONFIRMADA') {
-            // Notificação animada
-            toast.custom((t) => (
-              <div className={`bg-green-100 border-l-4 border-green-500 rounded-lg shadow-lg p-4 max-w-md w-full ${t.visible ? 'animate-enter' : 'animate-leave'}`}>
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0">
-                    <FiCheckCircle className="text-green-600 text-2xl" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-green-800">Reserva Confirmada!</h3>
-                    <p className="text-sm text-green-700">A sua reserva para a mesa {nova.mesa.numero} foi confirmada.</p>
+            toast.custom(
+              (t) => (
+                <div
+                  className={`w-full max-w-md rounded-lg border-l-4 border-oliva bg-white p-4 shadow-lg ${
+                    t.visible ? 'animate-enter' : 'animate-leave'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <FiCheckCircle className="mt-0.5 shrink-0 text-xl text-oliva" aria-hidden="true" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-secundaria">Reserva confirmada</h3>
+                      <p className="text-sm text-texto/70">
+                        A sua reserva para a mesa {nova.mesa.numero} foi confirmada.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          toast.dismiss(t.id);
+                          handleBaixarRecibo(nova);
+                        }}
+                        className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primaria hover:underline"
+                      >
+                        <FiDownload size={12} /> Baixar recibo
+                      </button>
+                    </div>
                     <button
-                      onClick={() => {
-                        toast.dismiss(t.id);
-                        handleBaixarRecibo(nova);
-                      }}
-                      className="mt-2 inline-flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded-full text-xs hover:bg-green-700 transition"
+                      type="button"
+                      onClick={() => toast.dismiss(t.id)}
+                      aria-label="Fechar notificação"
+                      className="text-texto/40 hover:text-texto"
                     >
-                      <FiDownload size={12} /> Baixar Recibo
+                      <FiX />
                     </button>
                   </div>
-                  <button onClick={() => toast.dismiss(t.id)} className="text-green-600 hover:text-green-800">
-                    <FiX />
-                  </button>
                 </div>
-              </div>
-            ), { duration: 10000 });
+              ),
+              { duration: 10000 }
+            );
           }
         }
         return novas;
@@ -106,59 +130,105 @@ export default function MinhasReservas() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PENDENTE': return 'bg-yellow-100 text-yellow-800';
-      case 'CONFIRMADA': return 'bg-green-100 text-green-800';
-      case 'CANCELADA': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  if (carregando) return <div className="text-center py-20">Carregando...</div>;
+  if (carregando) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primaria" />
+      </div>
+    );
+  }
 
   return (
-    <div className="container-custom py-8">
-      <h1 className="text-3xl font-bold mb-6">Minhas Reservas</h1>
-      {reservas.length === 0 ? (
-        <p className="text-gray-500">Nenhuma reserva encontrada.</p>
-      ) : (
-        <div className="grid gap-6">
-          {reservas.map((r) => (
-            <div key={r.id} className="bg-white p-4 rounded-2xl shadow-md flex flex-wrap justify-between items-center">
-              <div>
-                <p><strong>Mesa:</strong> {r.mesa.numero}</p>
-                <p><strong>Data:</strong> {new Date(r.dataHora).toLocaleString('pt-PT')}</p>
-                <p><strong>Pessoas:</strong> {r.quantidadePessoas}</p>
-                <p><strong>Status:</strong> 
-                  <span className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(r.status)}`}>
-                    {r.status}
-                  </span>
-                </p>
-                <p><strong>Código:</strong> {r.codigoRecibo}</p>
-              </div>
-              <div className="flex gap-2 mt-2 sm:mt-0">
-                {(r.status === 'PENDENTE' || r.status === 'CONFIRMADA') && (
-                  <button
-                    onClick={() => handleCancelar(r.id)}
-                    className="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 transition"
-                  >
-                    Cancelar
-                  </button>
-                )}
-                {r.status === 'CONFIRMADA' && (
-                  <button
-                    onClick={() => handleBaixarRecibo(r)}
-                    className="bg-primaria text-white px-4 py-2 rounded-full hover:bg-secundaria transition"
-                  >
-                    Baixar Recibo
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+    <section className="section">
+      <div className="container-custom max-w-4xl">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="eyebrow">A sua conta</p>
+            <h1 className="mt-2 font-display text-3xl text-secundaria sm:text-4xl">
+              Minhas reservas
+            </h1>
+            <p className="mt-2 text-sm text-texto/60">
+              Acompanhe o estado das suas reservas e apresente o recibo à chegada.
+            </p>
+          </div>
+          <Link to="/reservar-mesa" className="btn-primary btn-sm">
+            <FiPlus aria-hidden="true" /> Nova reserva
+          </Link>
         </div>
-      )}
-    </div>
+
+        {reservas.length === 0 ? (
+          <div className="card mt-8 p-12 text-center">
+            <FiCalendar className="mx-auto text-4xl text-primaria" aria-hidden="true" />
+            <p className="mt-4 font-display text-xl text-secundaria">Ainda não tem reservas</p>
+            <p className="mt-1 text-sm text-texto/60">
+              Reserve uma mesa e garanta o seu lugar no Origens do Sabor.
+            </p>
+            <Link to="/reservar-mesa" className="btn-primary mt-6">
+              Reservar mesa
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-8 space-y-4">
+            {reservas.map((r) => (
+              <article
+                key={r.id}
+                className="rounded-sm border border-texto/10 bg-white p-5 shadow-suave sm:p-6"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2 className="font-display text-xl text-secundaria">Mesa {r.mesa.numero}</h2>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${
+                          STATUS_COR[r.status] || 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {STATUS_LABEL[r.status] || r.status}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-texto/70">
+                      {new Date(r.dataHora).toLocaleString('pt-PT', {
+                        dateStyle: 'long',
+                        timeStyle: 'short',
+                      })}
+                      {' · '}
+                      {r.quantidadePessoas} {r.quantidadePessoas === 1 ? 'pessoa' : 'pessoas'}
+                    </p>
+                    <p className="mt-1 text-xs text-texto/45">
+                      Código de validação: <span className="font-mono">{r.codigoRecibo}</span>
+                    </p>
+                    {r.observacoes && (
+                      <p className="mt-3 rounded-sm bg-areia/60 px-3 py-2 text-sm text-texto/70">
+                        {r.observacoes}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {(r.status === 'PENDENTE' || r.status === 'CONFIRMADA') && (
+                      <button
+                        type="button"
+                        onClick={() => handleCancelar(r.id)}
+                        className="rounded-full border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50"
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                    {r.status === 'CONFIRMADA' && (
+                      <button
+                        type="button"
+                        onClick={() => handleBaixarRecibo(r)}
+                        className="btn-secondary btn-sm"
+                      >
+                        <FiDownload aria-hidden="true" /> Recibo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

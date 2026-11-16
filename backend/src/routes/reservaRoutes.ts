@@ -7,30 +7,31 @@ import {
   confirmarReserva,
   adminCancelarReserva,
   obterReserva,
-  validarReservaQR,        // só uma vez
-  verificarDisponibilidade, // adicionar esta importação
+  validarReservaQR,
+  verificarDisponibilidade,
 } from '../controllers/reservaController';
 import { authMiddleware } from '../middlewares/authMiddleware';
+import { optionalAuth } from '../middlewares/optionalAuth';
 import { adminMiddleware } from '../middlewares/adminMiddleware';
 
 const router = Router();
 
-// ==================== ROTAS PÚBLICAS (sem autenticação) ====================
+// Público
 router.get('/validar/:id', validarReservaQR);
 router.get('/disponibilidade', verificarDisponibilidade);
+router.post('/', optionalAuth, criarReserva);
 
-// ==================== ROTAS PROTEGIDAS (exigem autenticação) ====================
+// Autenticado
 router.use(authMiddleware);
 
-// Cliente
-router.post('/', criarReserva);
 router.get('/minhas', minhasReservas);
-router.delete('/:id', cancelarReserva);
-router.get('/:id', obterReserva);
 
-// Admin (exigem role ADMIN)
+// Admin (antes de /:id para não colidir com o parâmetro)
 router.get('/admin/todas', adminMiddleware, listarTodasReservas);
 router.patch('/admin/:id/confirmar', adminMiddleware, confirmarReserva);
 router.patch('/admin/:id/cancelar', adminMiddleware, adminCancelarReserva);
+
+router.delete('/:id', cancelarReserva);
+router.get('/:id', obterReserva);
 
 export default router;

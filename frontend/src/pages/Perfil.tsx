@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
-import { FiCamera, FiSave, FiLock, FiUser, FiMail, FiPhone, FiMapPin, FiCalendar } from 'react-icons/fi';
+import { FiCamera, FiLock, FiUser, FiMail, FiPhone, FiMapPin, FiCalendar } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 
 export default function Perfil() {

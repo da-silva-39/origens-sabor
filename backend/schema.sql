@@ -280,3 +280,28 @@ INSERT INTO produtos (nome, descricao, preco, categoria, "imagemUrl", "createdAt
 ('CHÁ SIMPLES', 'Chá preto simples.', 50, 'Cafe e Cha', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('CHÁ DE CAMOMILA', 'Infusão de camomila relaxante.', 70, 'Cafe e Cha', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('CHÁ PRETO', 'Chá preto.', 50, 'Cafe e Cha', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- =====================================================
+-- Atualização: reservas públicas, menu e desempenho
+-- (idempotente; aplicável a bases já existentes)
+-- =====================================================
+ALTER TABLE "reservas" ALTER COLUMN "clienteId" DROP NOT NULL;
+ALTER TABLE "reservas" ADD COLUMN IF NOT EXISTS "nomeContacto" TEXT;
+ALTER TABLE "reservas" ADD COLUMN IF NOT EXISTS "emailContacto" TEXT;
+ALTER TABLE "reservas" ADD COLUMN IF NOT EXISTS "telefoneContacto" TEXT;
+
+ALTER TABLE "produtos" ADD COLUMN IF NOT EXISTS "disponivel" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "produtos" ADD COLUMN IF NOT EXISTS "destaque" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "produtos" ADD COLUMN IF NOT EXISTS "alergenios" TEXT;
+
+CREATE INDEX IF NOT EXISTS "produtos_categoria_idx" ON "produtos"("categoria");
+CREATE INDEX IF NOT EXISTS "produtos_disponivel_destaque_idx" ON "produtos"("disponivel", "destaque");
+CREATE INDEX IF NOT EXISTS "pedidos_clienteId_dataPedido_idx" ON "pedidos"("clienteId", "dataPedido");
+CREATE INDEX IF NOT EXISTS "pedidos_agenteId_status_idx" ON "pedidos"("agenteId", "status");
+CREATE INDEX IF NOT EXISTS "pedidos_status_idx" ON "pedidos"("status");
+CREATE INDEX IF NOT EXISTS "itens_pedido_pedidoId_idx" ON "itens_pedido"("pedidoId");
+CREATE INDEX IF NOT EXISTS "reservas_mesaId_dataHora_status_idx" ON "reservas"("mesaId", "dataHora", "status");
+CREATE INDEX IF NOT EXISTS "reservas_clienteId_dataHora_idx" ON "reservas"("clienteId", "dataHora");
+CREATE INDEX IF NOT EXISTS "reservas_status_idx" ON "reservas"("status");
+CREATE INDEX IF NOT EXISTS "localizacoes_agente_agenteId_createdAt_idx" ON "localizacoes_agente"("agenteId", "createdAt");
+CREATE INDEX IF NOT EXISTS "usuarios_role_ativo_idx" ON "usuarios"("role", "ativo");

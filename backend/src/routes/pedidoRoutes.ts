@@ -11,6 +11,7 @@ import {
 } from '../controllers/pedidoController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { adminMiddleware } from '../middlewares/adminMiddleware';
+import { roleMiddleware } from '../middlewares/roleMiddleware';
 
 const router = Router();
 
@@ -21,8 +22,8 @@ router.get('/cliente', listarPedidosCliente);
 router.post('/', criarPedido);
 
 // Agente
-router.get('/agente', listarPedidosAgente);
-router.put('/:id/entregue', marcarEntregue);
+router.get('/agente', roleMiddleware(['AGENTE', 'ADMIN']), listarPedidosAgente);
+router.put('/:id/entregue', roleMiddleware(['AGENTE', 'ADMIN']), marcarEntregue);
 
 // Admin
 router.get('/todos', adminMiddleware, listarTodosPedidos);

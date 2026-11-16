@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
+import axios from 'axios';
 import { FiEye, FiEyeOff } from 'react-icons/fi'; // ← importar ícones
 
 export default function Login() {
@@ -21,11 +21,13 @@ export default function Login() {
       if (user.role === 'ADMIN') navigate('/admin/dashboard');
       else if (user.role === 'AGENTE') navigate('/agente/dashboard');
       else navigate('/dashboard');
-    } catch (err) { setError('Credenciais inválidas'); }
+    } catch (err) {
+      setError(axios.isAxiosError(err) ? err.response?.data?.error || 'Não foi possível entrar.' : 'Não foi possível entrar.');
+    }
   };
 
   const handleGoogleLogin = () => {
-    const backendUrl = api.defaults.baseURL.replace(/\/api$/, '');
+    const backendUrl = (api.defaults.baseURL || '').replace(/\/api$/, '');
     window.location.href = `${backendUrl}/api/auth/google`;
   };
 
@@ -38,6 +40,7 @@ export default function Login() {
           <input
             type="email"
             placeholder="Email"
+            aria-label="E-mail"
             value={email}
             onChange={e => setEmail(e.target.value)}
             className="w-full border rounded-full px-4 py-2"
@@ -47,6 +50,7 @@ export default function Login() {
             <input
               type={showPassword ? 'text' : 'password'}
               placeholder="Senha"
+              aria-label="Palavra-passe"
               value={password}
               onChange={e => setPassword(e.target.value)}
               className="w-full border rounded-full px-4 py-2 pr-12"

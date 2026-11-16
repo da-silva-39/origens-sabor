@@ -42,10 +42,12 @@ export default function AdminDashboard() {
           const usuarios = usuariosRes.data;
           const produtos = produtosRes.data;
           const pedidos = pedidosRes.data;
-          const receita = pedidos.reduce(
-            (acc: number, pedido: { total?: number | null }) => acc + (pedido.total ?? 0),
-            0
-          );
+          const receita = pedidos
+            .filter((pedido: { status?: string }) => pedido.status !== 'CANCELADO')
+            .reduce(
+              (acc: number, pedido: { total?: number | null }) => acc + (pedido.total ?? 0),
+              0
+            );
           setStats({
             totalUsuarios: usuarios.length,
             totalProdutos: produtos.length,
@@ -108,7 +110,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-2xl shadow-md p-6 text-center hover:shadow-lg transition">
             <FiDollarSign className="mx-auto mb-2 text-primaria" size={32} />
             <div className="text-2xl font-bold text-primaria">{stats.receitaTotal.toFixed(2)} MT</div>
-            <div className="text-gray-600">Receita total</div>
+            <div className="text-gray-600">Receita (não cancelados)</div>
           </div>
         </div>
 
