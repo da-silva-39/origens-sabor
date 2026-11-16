@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
@@ -30,7 +30,7 @@ const Manual = lazy(() => import('./pages/Manual'));
 const ValidarReserva = lazy(() => import('./pages/ValidarReserva'));
 const MeusPedidos = lazy(() => import('./pages/MeusPedidos'));
 const AdminMesas = lazy(() => import('./pages/AdminMesas'));
-const Privacidade = lazy(() => import('./pages/Privacidade'));
+const Termos = lazy(() => import('./pages/Termos'));
 const PaginaNaoEncontrada = lazy(() => import('./pages/PaginaNaoEncontrada'));
 
 function PageLoader() {
@@ -73,7 +73,8 @@ function App() {
               <Route path="/reservas/validar/:id" element={<ValidarReserva />} />
               <Route path="/meus-pedidos" element={<RotaProtegida><MeusPedidos /></RotaProtegida>} />
               <Route path="/admin/mesas" element={<RotaProtegida roles={['ADMIN']}><AdminMesas /></RotaProtegida>} />
-              <Route path="/privacidade" element={<Privacidade />} />
+              <Route path="/termos" element={<Termos />} />
+              <Route path="/privacidade" element={<Navigate to="/termos" replace />} />
               <Route path="*" element={<PaginaNaoEncontrada />} />
             </Routes>
           </Suspense>

@@ -66,7 +66,7 @@ export default function Footer() {
               <li><Link to="/minhas-reservas" className="footer-link">As minhas reservas</Link></li>
               <li><Link to="/meus-pedidos" className="footer-link">Os meus pedidos</Link></li>
               <li><Link to="/contacto" className="footer-link">Contacto</Link></li>
-              <li><Link to="/privacidade" className="footer-link">Privacidade</Link></li>
+              <li><Link to="/termos" className="footer-link">Termos e privacidade</Link></li>
             </ul>
           </nav>
 

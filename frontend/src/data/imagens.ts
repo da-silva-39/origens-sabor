@@ -54,3 +54,22 @@ export const GALERIA = [
     legenda: "Chamussas de frango",
   },
 ] as const;
+
+export const HERO_SLIDES = [
+  {
+    src: "/imagens-web/hero.webp",
+    alt: "Prato servido no Origens do Sabor, em Chimoio",
+  },
+  {
+    src: "/imagens-web/prato-assinatura.webp",
+    alt: "Prato de assinatura do Origens do Sabor",
+  },
+  {
+    src: "/Imagens Corretas/1-4 frango grelhado.jpg",
+    alt: "Frango grelhado com acompanhamento",
+  },
+  {
+    src: "/imagens-web/contacto.webp",
+    alt: "Ambiente e mesa do restaurante Origens do Sabor",
+  },
+] as const;

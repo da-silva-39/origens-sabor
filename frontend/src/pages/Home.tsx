@@ -4,15 +4,19 @@ import { Link } from "react-router-dom";
 import {
   FiArrowRight,
   FiCalendar,
+  FiChevronLeft,
+  FiChevronRight,
   FiClock,
   FiMapPin,
   FiPhone,
   FiArrowUpRight,
+  FiPause,
+  FiPlay,
 } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import api from "../services/api";
 import { RESTAURANTE } from "../data/restaurante";
-import { GALERIA, imagemDoProduto } from "../data/imagens";
+import { GALERIA, HERO_SLIDES, imagemDoProduto } from "../data/imagens";
 import { descricaoExibicao, nomeExibicao, rotuloCategoria } from "../data/produtos";
 
 interface Produto {
@@ -68,6 +72,19 @@ export default function Home() {
     "Cozinha moçambicana, pratos da casa, takeaway e reservas de mesa em Chimoio. Rua Cidade de Lichinga, em frente ao Tribunal Judicial."
   );
   const [destaques, setDestaques] = useState<Produto[]>([]);
+  const [slideAtivo, setSlideAtivo] = useState(0);
+  const [pausado, setPausado] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+  useEffect(() => {
+    if (pausado) return;
+    const temporizador = window.setTimeout(() => {
+      setSlideAtivo((atual) => (atual + 1) % HERO_SLIDES.length);
+    }, 3000);
+    return () => window.clearTimeout(temporizador);
+  }, [slideAtivo, pausado]);
 
   useEffect(() => {
     let ativo = true;
@@ -86,15 +103,37 @@ export default function Home() {
 
   return (
     <div>
-      <section className="relative isolate min-h-[78vh] overflow-hidden bg-secundaria sm:min-h-[86vh]">
-        <img
-          src="/imagens-web/hero.webp"
-          alt="Prato servido no Origens do Sabor, em Chimoio"
-          className="absolute inset-0 h-full w-full object-cover"
-          width={1800}
-          height={1200}
-          fetchPriority="high"
-        />
+      <section
+        className="relative isolate min-h-[78vh] overflow-hidden bg-secundaria sm:min-h-[86vh]"
+        role="region"
+        aria-roledescription="carrossel"
+        aria-label="Fotografias do Origens do Sabor"
+      >
+        <div className="absolute inset-0">
+          {HERO_SLIDES.map((slide, indice) => {
+            const ativo = indice === slideAtivo;
+            return (
+              <div
+                key={slide.src}
+                aria-hidden={!ativo}
+                className={`absolute inset-0 transition-opacity duration-700 ease-out ${
+                  ativo ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                <img
+                  src={slide.src}
+                  alt={ativo ? slide.alt : ""}
+                  className="h-full w-full object-cover"
+                  width={1800}
+                  height={1200}
+                  loading={indice === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={indice === 0 ? "high" : "auto"}
+                />
+              </div>
+            );
+          })}
+        </div>
         <div className="absolute inset-0 bg-gradient-to-r from-secundaria/90 via-secundaria/60 to-secundaria/20" />
         <div className="container-custom relative flex min-h-[78vh] flex-col justify-center py-20 sm:min-h-[86vh]">
           <div className="max-w-2xl text-creme">
@@ -121,6 +160,60 @@ export default function Home() {
             </div>
           </div>
         </div>
+        <div className="absolute inset-x-0 top-4 z-20 sm:top-6">
+          <div className="container-custom flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                setSlideAtivo(
+                  (atual) => (atual - 1 + HERO_SLIDES.length) % HERO_SLIDES.length
+                )
+              }
+              aria-label="Fotografia anterior"
+              className="hidden h-9 w-9 items-center justify-center rounded-full border border-creme/30 bg-secundaria/40 text-creme backdrop-blur transition-colors hover:border-creme hover:bg-creme hover:text-secundaria sm:inline-flex"
+            >
+              <FiChevronLeft aria-hidden="true" />
+            </button>
+
+            <div className="flex items-center gap-2" role="group" aria-label="Selecionar fotografia">
+              {HERO_SLIDES.map((slide, indice) => (
+                <button
+                  key={slide.src}
+                  type="button"
+                  onClick={() => setSlideAtivo(indice)}
+                  aria-label={`Fotografia ${indice + 1}: ${slide.alt}`}
+                  aria-current={indice === slideAtivo ? "true" : undefined}
+                  className={`h-2.5 rounded-full transition-all duration-300 ${
+                    indice === slideAtivo
+                      ? "w-7 bg-dourado"
+                      : "w-2.5 bg-creme/45 hover:bg-creme/80"
+                  }`}
+                />
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setSlideAtivo((atual) => (atual + 1) % HERO_SLIDES.length)
+              }
+              aria-label="Fotografia seguinte"
+              className="hidden h-9 w-9 items-center justify-center rounded-full border border-creme/30 bg-secundaria/40 text-creme backdrop-blur transition-colors hover:border-creme hover:bg-creme hover:text-secundaria sm:inline-flex"
+            >
+              <FiChevronRight aria-hidden="true" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setPausado((valor) => !valor)}
+              aria-label={pausado ? "Iniciar apresentação automática" : "Pausar apresentação automática"}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-creme/30 bg-secundaria/40 text-creme backdrop-blur transition-colors hover:border-creme hover:bg-creme hover:text-secundaria"
+            >
+              {pausado ? <FiPlay aria-hidden="true" /> : <FiPause aria-hidden="true" />}
+            </button>
+          </div>
+        </div>
+
         <div className="absolute inset-x-0 bottom-0 border-t border-creme/15 bg-secundaria/55 backdrop-blur-sm">
           <div className="container-custom grid gap-3 py-4 text-xs text-creme/75 sm:grid-cols-3 sm:text-sm">
             <span className="flex items-center gap-2">
